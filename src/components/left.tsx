@@ -16,7 +16,7 @@ const Left = () => {
               href={"/"}
               className=" flex flex-row items-center gap-2 px-2 text-[17px]"
             >
-              <IoHome color="red" size={"25px"} />
+              <IoHome color="tomato" size={"25px"} />
               Home
             </Link>
           </li>
@@ -61,7 +61,7 @@ const Left = () => {
               href={"/"}
               className=" flex flex-row items-center gap-2 px-2 text-[17px]"
             >
-              <MdOutlinePets color="magenta" size={"25px"} />
+              <MdOutlinePets color="violet" size={"25px"} />
               Pets
             </Link>
           </li>
