@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import React, { useEffect, useState } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/app/firebase/config";
@@ -65,7 +66,7 @@ const Center = () => {
                       {imageLoaded[post.id] ? null : (
                         <div className="bg-gray-700 rounded-md h-[300px] mb-2"></div>
                       )}
-                      <img
+                      <Image
                         src={post.image}
                         alt={post.text}
                         className="w-full rounded-md"
