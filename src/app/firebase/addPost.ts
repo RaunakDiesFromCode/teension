@@ -1,13 +1,14 @@
 import { addDoc, collection } from "@firebase/firestore";
 import { db } from "./config";
 
-const addPost = async (text:String, image:String, votes:Number, username:String) => {
+const addPost = async (text:String, image:String, votes:Number, username:String, description:String) => {
   try {
     const docRef = await addDoc(collection(db, "posts"), {
       text,
       image: image || "",
       votes,
       username,
+      description,
       createdAt: new Date() // Optionally include a timestamp
     });
     console.log("Document written with ID: ", docRef.id);
