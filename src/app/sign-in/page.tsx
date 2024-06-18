@@ -1,83 +1,96 @@
-// app/sign-in/page.tsx
 "use client";
-
-import { useState } from "react";
+import { useState, ChangeEvent } from "react";
+import { useSignInWithEmailAndPassword } from "react-firebase-hooks/auth";
+import { auth } from "@/app/firebase/config";
 import { useRouter } from "next/navigation";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../firebase/config";
-import { FaRegEye, FaRegEyeSlash } from "react-icons/fa";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
+import Link from "next/link";
 
 const SignIn = () => {
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [showPassword, setShowPassword] = useState(false); // State for toggling password visibility
-    const [error, setError] = useState("");
-    const router = useRouter();
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
+  const [signInWithEmailAndPassword, user, loading, signInError] =
+    useSignInWithEmailAndPassword(auth);
+  const router = useRouter();
 
-    const handleSignIn = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError("");
-        try {
-            await signInWithEmailAndPassword(auth, email, password);
-            router.push("/"); // Redirect to home page after successful sign-in
-        } catch (error: any) {
-            setError(error.message);
-        }
-    };
+  const handleSignIn = async () => {
+    setError(""); // Clear previous error
+    try {
+      const res = await signInWithEmailAndPassword(email, password);
+      if (res?.user) {
+        console.log({ res });
+        sessionStorage.setItem("user", "true");
+        setEmail("");
+        setPassword("");
+        router.push("/");
+      } else {
+        setError("Invalid email or password. Please try again.");
+      }
+    } catch (e: any) {
+      setError(e.message || "An unexpected error occurred. Please try again.");
+      console.error(e);
+    }
+  };
 
-    const toggleShowPassword = () => {
-        setShowPassword(!showPassword);
-    };
+  const handleEmailChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setEmail(e.target.value);
+    if (error) setError(""); // Clear error when user starts typing
+  };
 
-    return (
-        <div className="flex items-center justify-center h-screen bg-gray-100 text-black">
-            <div className="w-full max-w-md p-8 space-y-6 bg-white rounded shadow-md">
-                <h2 className="text-2xl font-bold text-center">Sign In</h2>
-                <form onSubmit={handleSignIn} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Email:</label>
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                            className="w-full px-3 py-2 border rounded shadow-sm focus:outline-none focus:ring focus:border-blue-300 text-black"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Password:</label>
-                        <div className="relative">
-                            <input
-                                type={showPassword ? "text" : "password"} // Toggle input type based on showPassword state
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                                className="w-full px-3 py-2 border rounded shadow-sm focus:outline-none focus:ring focus:border-blue-300 text-black"
-                            />
-                            <button
-                                type="button"
-                                onClick={toggleShowPassword}
-                                className="absolute inset-y-0 right-0 flex items-center px-2 text-gray-500 focus:outline-none"
-                            >
-                                {showPassword ? (
-                                    <FaRegEye />
-                                ) : (
-                                    <FaRegEyeSlash />
-                                )}
-                            </button>
-                        </div>
-                    </div>
-                    {error && <p className="text-sm text-red-600">Invalid email or password. Please try again.</p>}
-                    <button
-                        type="submit"
-                        className="w-full px-4 py-2 font-semibold text-white bg-blue-600 rounded hover:bg-blue-700"
-                    >
-                        Sign In
-                    </button>
-                </form>
-            </div>
+  const handlePasswordChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setPassword(e.target.value);
+    if (error) setError(""); // Clear error when user starts typing
+  };
+
+  const toggleShowPassword = () => {
+    setShowPassword(!showPassword);
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-900 text-black">
+      <div className="bg-gray-800 p-10 rounded-lg shadow-xl w-96">
+        <h1 className="text-white text-2xl mb-5">Sign In</h1>
+        <input
+          type="email"
+          placeholder="Email"
+          value={email}
+          onChange={handleEmailChange}
+          className="w-full p-3 mb-4 bg-gray-700 rounded outline-none text-white placeholder-gray-500"
+        />
+        <div className="relative">
+          <input
+            type={showPassword ? "text" : "password"}
+            placeholder="Password"
+            value={password}
+            onChange={handlePasswordChange}
+            className="w-full p-3 mb-4 bg-gray-700 rounded outline-none text-white placeholder-gray-500 pr-10"
+          />
+          <button
+            onClick={toggleShowPassword}
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500"
+          >
+            {showPassword ? <FaEyeSlash /> : <FaEye />}
+          </button>
         </div>
-    );
+        {error && <p className="text-red-500 mb-4">{error}</p>}
+        <button
+          onClick={handleSignIn}
+          className="w-full p-3 bg-indigo-600 rounded text-white hover:bg-indigo-500"
+          disabled={loading}
+        >
+          Sign In
+        </button>
+        <Link
+          href="/sign-up"
+          className="text-white/50 flex justify-center pt-2 text-sm"
+        >
+          Take me to sign-up Page
+        </Link>
+      </div>
+    </div>
+  );
 };
 
 export default SignIn;

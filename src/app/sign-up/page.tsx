@@ -1,70 +1,92 @@
-// app/sign-up/page.tsx
-"use client";
-
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../firebase/config";
-import { useAuth } from "../utils/authUtils";
+'use client'
+import { useState, ChangeEvent } from 'react';
+import { useCreateUserWithEmailAndPassword } from 'react-firebase-hooks/auth';
+import { auth } from '@/app/firebase/config';
+import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import Link from 'next/link';
 
 const SignUp = () => {
-    const { user, loading } = useAuth();
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [error, setError] = useState("");
-    const router = useRouter();
+    const [email, setEmail] = useState<string>('');
+    const [password, setPassword] = useState<string>('');
+    const [showPassword, setShowPassword] = useState<boolean>(false);
+    const [error, setError] = useState<string>('');
+    const [createUserWithEmailAndPassword, user, loading, signUpError] = useCreateUserWithEmailAndPassword(auth);
 
-    const handleSignUp = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setError("");
+    const handleSignUp = async () => {
+        setError(''); // Clear previous error
         try {
-            await createUserWithEmailAndPassword(auth, email, password);
-            router.push("/"); // Redirect to home page after successful sign-up
-        } catch (error: any) {
-            setError(error.message);
+            const res = await createUserWithEmailAndPassword(email, password);
+            if (res?.user) {
+                console.log({ res });
+                sessionStorage.setItem('user', 'true');
+                setEmail('');
+                setPassword('');
+            } else {
+                setError('Sign-up failed. Please try again.');
+            }
+        } catch (e: any) {
+            if (e.code === 'auth/email-already-in-use') {
+                setError('Email already in use. Please sign in instead.');
+            } else {
+                setError(e.message || 'An unexpected error occurred. Please try again.');
+            }
+            console.error(e);
         }
     };
 
-    if (loading) return <p>Loading...</p>; 
+    const handleEmailChange = (e: ChangeEvent<HTMLInputElement>) => {
+        setEmail(e.target.value);
+        if (error) setError(''); // Clear error when user starts typing
+    };
 
-    if (user) {
-        router.push("/"); // Redirect to home page if already signed in
-        return null;
-    }
+    const handlePasswordChange = (e: ChangeEvent<HTMLInputElement>) => {
+        setPassword(e.target.value);
+        if (error) setError(''); // Clear error when user starts typing
+    };
+
+    const toggleShowPassword = () => {
+        setShowPassword(!showPassword);
+    };
 
     return (
-        <div className="flex items-center justify-center h-screen bg-gray-100 text-black">
-            <div className="w-full max-w-md p-8 space-y-6 bg-white rounded shadow-md">
-                <h2 className="text-2xl font-bold text-center">Sign Up</h2>
-                <form onSubmit={handleSignUp} className="space-y-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Email:</label>
-                        <input
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                            className="w-full px-3 py-2 border rounded shadow-sm focus:outline-none focus:ring focus:border-blue-300 text-black"
-                        />
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700">Password:</label>
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                            className="w-full px-3 py-2 border rounded shadow-sm focus:outline-none focus:ring focus:border-blue-300 text-black"
-                        />
-                    </div>
-                    {error && <p className="text-sm text-red-600">{error}</p>}
+        <div className="min-h-screen flex items-center justify-center bg-gray-900 text-black">
+            <div className="bg-gray-800 p-10 rounded-lg shadow-xl w-96">
+                <h1 className="text-white text-2xl mb-5">Sign Up</h1>
+                <input
+                    type="email"
+                    placeholder="Email"
+                    value={email}
+                    onChange={handleEmailChange}
+                    className="w-full p-3 mb-4 bg-gray-700 rounded outline-none text-white placeholder-gray-500"
+                />
+                <div className="relative">
+                    <input
+                        type={showPassword ? "text" : "password"}
+                        placeholder="Password"
+                        value={password}
+                        onChange={handlePasswordChange}
+                        className="w-full p-3 mb-4 bg-gray-700 rounded outline-none text-white placeholder-gray-500 pr-10"
+                    />
                     <button
-                        type="submit"
-                        className="w-full px-4 py-2 font-semibold text-white bg-blue-600 rounded hover:bg-blue-700"
+                        onClick={toggleShowPassword}
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500"
                     >
-                        Sign Up
+                        {showPassword ? <FaEyeSlash /> : <FaEye />}
                     </button>
-                </form>
+                </div>
+                {error && (
+                    <p className="text-red-500 mb-4">
+                        {error} {error.includes('sign in') && <Link href="/sign-in" className='text-white/50 underline'>Sign In</Link>}
+                    </p>
+                )}
+                <button
+                    onClick={handleSignUp}
+                    className="w-full p-3 bg-indigo-600 rounded text-white hover:bg-indigo-500"
+                    disabled={loading}
+                >
+                    Sign Up
+                </button>
+                <Link href="/sign-in" className='text-white/50 flex justify-center pt-2 text-sm'>Take me to sign-in Page</Link>
             </div>
         </div>
     );
