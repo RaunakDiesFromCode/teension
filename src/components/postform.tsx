@@ -46,7 +46,7 @@ const PostForm = () => {
       <label>
         Image URL:
         <input
-          type="text"
+          type="file"
           value={image}
           onChange={(e) => setImage(e.target.value)}
           className="text-black"
