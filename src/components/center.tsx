@@ -7,15 +7,23 @@ import {
   updateDoc,
   doc,
   setDoc,
-  getDoc,
   deleteDoc,
+  query,
+  where,
+  onSnapshot,
 } from "firebase/firestore";
 import { db } from "@/app/firebase/config";
-import { BiComment, BiDownvote, BiUpvote } from "react-icons/bi";
-import { FaRegShareFromSquare } from "react-icons/fa6";
+import {
+  BiComment,
+  BiDownvote,
+  BiSolidDownvote,
+  BiSolidUpvote,
+  BiUpvote,
+} from "react-icons/bi";
+import { FaRegShareSquare } from "react-icons/fa";
 import useAuth from "@/app/firebase/useAuth";
-import firebase from "firebase/compat/app";
 import SkeletonLoader from "./UI/skeletonloader";
+import PostDetail from "./postdetail";
 
 interface Post {
   id: string;
@@ -28,25 +36,62 @@ interface Post {
 const Center: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [imageLoaded, setImageLoaded] = useState<{ [key: string]: boolean }>(
     {}
   );
   const { currentUser, loading: authLoading } = useAuth();
 
+  // State to track user's vote status for each post
+  const [userVotes, setUserVotes] = useState<{ [postId: string]: number }>({});
+
   useEffect(() => {
-    const fetchPosts = async () => {
-      setLoading(true);
-      const querySnapshot = await getDocs(collection(db, "posts"));
-      const postsData = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Post[];
+    const unsubscribe = onSnapshot(collection(db, "posts"), (snapshot) => {
+      const postsData: Post[] = [];
+      const userVotesData: { [postId: string]: number } = {};
+
+      snapshot.forEach((doc) => {
+        const postData = {
+          id: doc.id,
+          ...doc.data(),
+        } as Post;
+        postsData.push(postData);
+
+        // Fetch user's votes for each post
+        if (currentUser) {
+          // Check if current user has upvoted or downvoted this post
+          const upvotesQuery = query(
+            collection(db, "posts", postData.id, "upvotes"),
+            where("email", "==", currentUser.email)
+          );
+          const downvotesQuery = query(
+            collection(db, "posts", postData.id, "downvotes"),
+            where("email", "==", currentUser.email)
+          );
+
+          Promise.all([getDocs(upvotesQuery), getDocs(downvotesQuery)])
+            .then(([upvotesSnapshot, downvotesSnapshot]) => {
+              if (!upvotesSnapshot.empty) {
+                userVotesData[postData.id] = 1; // 1 means upvoted
+              } else if (!downvotesSnapshot.empty) {
+                userVotesData[postData.id] = -1; // -1 means downvoted
+              } else {
+                userVotesData[postData.id] = 0; // 0 means no vote
+              }
+              setUserVotes(userVotesData);
+            })
+            .catch((error) => {
+              console.error("Error fetching user votes:", error);
+            });
+        }
+      });
+
       setPosts(postsData);
       setLoading(false);
-    };
+    });
 
-    fetchPosts();
-  }, []);
+    return () => unsubscribe();
+  }, [currentUser]);
 
   const handleImageLoaded = (postId: string) => {
     setImageLoaded((prevState) => ({
@@ -64,52 +109,66 @@ const Center: React.FC = () => {
     const postIndex = posts.findIndex((post) => post.id === postId);
     if (postIndex === -1) return;
 
-    const postRef = doc(db, "posts", postId);
-    const upvoteRef = doc(collection(postRef, "upvotes"), currentUser.email);
-    const downvoteRef = doc(
-      collection(postRef, "downvotes"),
-      currentUser.email
-    );
-
-    const upvoteDoc = await getDoc(upvoteRef);
-    const downvoteDoc = await getDoc(downvoteRef);
-
     let newVoteCount = posts[postIndex].votes;
 
-    if (change === 1) {
-      if (upvoteDoc.exists()) {
-        // User already upvoted, do nothing
-        return;
-      } else if (downvoteDoc.exists()) {
-        // User had downvoted, remove downvote and add upvote
-        await deleteDoc(downvoteRef);
-        newVoteCount += 2;
+    // Check if the user has already upvoted or downvoted this post
+    if (change === 1 && userVotes[postId] !== 1) {
+      // Upvote
+      newVoteCount += 1;
+
+      // Add user's email to the upvotes collection
+      await setDoc(doc(db, "posts", postId, "upvotes", currentUser.email), {
+        email: currentUser.email,
+      });
+
+      setUserVotes((prevState) => ({
+        ...prevState,
+        [postId]: 1,
+      }));
+    } else if (change === -1 && userVotes[postId] !== -1) {
+      // Downvote
+      newVoteCount -= 1;
+
+      // Add user's email to the downvotes collection
+      await setDoc(doc(db, "posts", postId, "downvotes", currentUser.email), {
+        email: currentUser.email,
+      });
+
+      setUserVotes((prevState) => ({
+        ...prevState,
+        [postId]: -1,
+      }));
+    } else if (
+      change === 0 &&
+      (userVotes[postId] === 1 || userVotes[postId] === -1)
+    ) {
+      // Unvote
+      // Remove user's email from upvotes or downvotes collection
+      if (userVotes[postId] === 1) {
+        await deleteDoc(doc(db, "posts", postId, "upvotes", currentUser.email));
       } else {
-        // User had no previous vote, add upvote
-        newVoteCount += 1;
+        await deleteDoc(
+          doc(db, "posts", postId, "downvotes", currentUser.email)
+        );
       }
-      await setDoc(upvoteRef, { email: currentUser.email });
-    } else if (change === -1) {
-      if (downvoteDoc.exists()) {
-        // User already downvoted, do nothing
-        return;
-      } else if (upvoteDoc.exists()) {
-        // User had upvoted, remove upvote and add downvote
-        await deleteDoc(upvoteRef);
-        newVoteCount -= 2;
-      } else {
-        // User had no previous vote, add downvote
-        newVoteCount -= 1;
-      }
-      await setDoc(downvoteRef, { email: currentUser.email });
+
+      newVoteCount -= userVotes[postId]; // Subtract 1 for upvote, add 1 for downvote
+
+      setUserVotes((prevState) => ({
+        ...prevState,
+        [postId]: 0,
+      }));
+    } else {
+      // User is trying to upvote/downvote again after already upvoting/downvoting
+      return;
     }
 
-    // Update vote count
-    await updateDoc(postRef, {
+    // Update Firestore with the new vote count
+    await updateDoc(doc(db, "posts", postId), {
       votes: newVoteCount,
     });
 
-    // Update local state with new vote count
+    // Update local state with the new vote count
     const newPosts = [...posts];
     newPosts[postIndex].votes = newVoteCount;
     setPosts(newPosts);
@@ -130,16 +189,16 @@ const Center: React.FC = () => {
           {posts.map((post, index) => (
             <li
               key={post.id}
-              className="transition-all py-1  duration-100 bg-gray-800 my-3 hover:bg-slate-800 rounded-md hover:text-white flex flex-col"
+              className="py-1 transition-all duration-100 bg-gray-800 my-3 hover:bg-slate-800 rounded-md hover:text-white flex flex-col"
             >
-              <div className="flex flex-col flex-grow">
-                <Link
-                  href={"/"}
-                  className="flex flex-col gap-2 px-3 py-1 text-[17px]"
+              <Link href="/" passHref>
+                <div
+                  className="flex flex-col gap-2 px-3 py-1 text-[17px] cursor-pointer"
+                  onClick={() => setSelectedPost(post)}
                 >
                   <span className="text-2xl font-bold">{post.text}</span>
                   <span className="text-md my-2">{post.description}</span>
-                  {post.image && post.image.trim() !== "" && (
+                  {post.image && (
                     <div className="relative">
                       {imageLoaded[post.id] ? null : (
                         <div className="bg-gray-700 rounded-md h-[300px] mb-2"></div>
@@ -155,28 +214,50 @@ const Center: React.FC = () => {
                       />
                     </div>
                   )}
-                </Link>
-              </div>
+                </div>
+              </Link>
               <div className="flex flex-row">
-                <div className="flex flex-row items-center m-2 gap-2 bg-slate-700 rounded-full p-3 w-fit">
-                  <button onClick={() => handleVote(post.id, 1)}>
-                    <BiUpvote />
+                <div
+                  className={`flex flex-row items-center m-2 gap-2 rounded-full p-3 bg-slate-700`}
+                >
+                  <button
+                    onClick={() =>
+                      handleVote(post.id, userVotes[post.id] === 1 ? 0 : 1)
+                    }
+                  >
+                    {userVotes[post.id] === 1 ? (
+                      <BiSolidUpvote className="text-white" />
+                    ) : (
+                      <BiUpvote className="text-gray-300" />
+                    )}
                   </button>
                   <span className="text-sm">{post.votes}</span>
-                  <button onClick={() => handleVote(post.id, -1)}>
-                    <BiDownvote />
+                  <button
+                    onClick={() =>
+                      handleVote(post.id, userVotes[post.id] === -1 ? 0 : -1)
+                    }
+                  >
+                    {userVotes[post.id] === -1 ? (
+                      <BiSolidDownvote className="text-white" />
+                    ) : (
+                      <BiDownvote className="text-gray-300" />
+                    )}
                   </button>
                 </div>
-                <div className="m-2 bg-slate-700 rounded-full p-3 w-fit">
+                <div className="m-2 bg-slate-700 rounded-full p-3">
                   <BiComment />
                 </div>
-                <div className="m-2 bg-slate-700 rounded-full p-3 w-fit">
-                  <FaRegShareFromSquare />
+                <div className="m-2 bg-slate-700 rounded-full p-3">
+                  <FaRegShareSquare />
                 </div>
               </div>
             </li>
           ))}
         </ul>
+      )}
+
+      {selectedPost && (
+        <PostDetail post={selectedPost} onClose={() => setSelectedPost(null)} />
       )}
     </div>
   );
