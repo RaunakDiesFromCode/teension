@@ -130,7 +130,7 @@ const Center: React.FC = () => {
           {posts.map((post, index) => (
             <li
               key={post.id}
-              className="py-1 transition-all duration-100 bg-gray-800 my-3 hover:bg-slate-800 rounded-md hover:text-white flex flex-col"
+              className="transition-all py-1  duration-100 bg-gray-800 my-3 hover:bg-slate-800 rounded-md hover:text-white flex flex-col"
             >
               <div className="flex flex-col flex-grow">
                 <Link
