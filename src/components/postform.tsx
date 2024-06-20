@@ -64,7 +64,7 @@ const PostForm: React.FC<PostFormProps> = ({ onPostAdded }) => {
           value={text}
           onChange={(e) => setText(e.target.value)}
           required
-          className="p-2 bg-gray-800 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-2xl"
+          className="p-2 bg-gray-800 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-2xl text-xl"
           placeholder="Enter title"
         />
       </div>
