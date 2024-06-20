@@ -1,16 +1,20 @@
 import { useState, useEffect } from "react";
-import { getAuth, onAuthStateChanged } from "firebase/auth";
-import {app} from "./config"; // Ensure this is your initialized Firebase app
+import {
+  getAuth,
+  onAuthStateChanged,
+  User as FirebaseUser,
+} from "firebase/auth";
+import { app } from "./config"; // Adjust this according to your Firebase initialization
 
 interface User {
   uid: string;
-  email: string;
+  email: string | null;
   displayName: string | null;
   photoURL: string | null;
 }
 
 const useAuth = () => {
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null); // Use Firebase User type here
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -18,12 +22,7 @@ const useAuth = () => {
 
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        setCurrentUser({
-          uid: user.uid,
-          email: user.email || "", // Ensure email is always available
-          displayName: user.displayName || null,
-          photoURL: user.photoURL || null,
-        });
+        setCurrentUser(user); // Set Firebase User directly
       } else {
         setCurrentUser(null);
       }

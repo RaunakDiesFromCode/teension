@@ -9,13 +9,13 @@ import {
   setDoc,
   getDoc,
   deleteDoc,
-  onSnapshot,
 } from "firebase/firestore";
 import { db } from "@/app/firebase/config";
 import { BiComment, BiDownvote, BiUpvote } from "react-icons/bi";
 import { FaRegShareFromSquare } from "react-icons/fa6";
-import { BiSolidUpvote, BiSolidDownvote } from "react-icons/bi";
 import useAuth from "@/app/firebase/useAuth";
+import firebase from "firebase/compat/app";
+import SkeletonLoader from "./UI/skeletonloader";
 
 interface Post {
   id: string;
@@ -31,68 +31,22 @@ const Center: React.FC = () => {
   const [imageLoaded, setImageLoaded] = useState<{ [key: string]: boolean }>(
     {}
   );
-  const [userVotes, setUserVotes] = useState<{
-    [postId: string]: "upvoted" | "downvoted" | null;
-  }>({});
   const { currentUser, loading: authLoading } = useAuth();
 
   useEffect(() => {
-    const fetchPostsAndVotes = async () => {
+    const fetchPosts = async () => {
       setLoading(true);
-
-      // Fetch posts initially
       const querySnapshot = await getDocs(collection(db, "posts"));
       const postsData = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       })) as Post[];
       setPosts(postsData);
-
-      // Fetch user votes if user is logged in
-      if (currentUser && currentUser.email) {
-        const votesData: { [postId: string]: "upvoted" | "downvoted" | null } =
-          {};
-        for (const post of postsData) {
-          const upvoteDoc = await getDoc(
-            doc(
-              collection(doc(db, "posts", post.id), "upvotes"),
-              currentUser.email
-            )
-          );
-          const downvoteDoc = await getDoc(
-            doc(
-              collection(doc(db, "posts", post.id), "downvotes"),
-              currentUser.email
-            )
-          );
-          if (upvoteDoc.exists()) {
-            votesData[post.id] = "upvoted";
-          } else if (downvoteDoc.exists()) {
-            votesData[post.id] = "downvoted";
-          } else {
-            votesData[post.id] = null;
-          }
-        }
-        setUserVotes(votesData);
-      }
-
       setLoading(false);
-
-      // Set up real-time listener
-      const unsubscribe = onSnapshot(collection(db, "posts"), (snapshot) => {
-        const updatedPosts = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as Post[];
-        setPosts(updatedPosts);
-      });
-
-      // Cleanup listener on unmount
-      return () => unsubscribe();
     };
 
-    fetchPostsAndVotes();
-  }, [currentUser]);
+    fetchPosts();
+  }, []);
 
   const handleImageLoaded = (postId: string) => {
     setImageLoaded((prevState) => ({
@@ -124,40 +78,30 @@ const Center: React.FC = () => {
 
     if (change === 1) {
       if (upvoteDoc.exists()) {
-        // User already upvoted, remove upvote
-        await deleteDoc(upvoteRef);
-        newVoteCount -= 1;
-        setUserVotes((prevVotes) => ({ ...prevVotes, [postId]: null }));
+        // User already upvoted, do nothing
+        return;
       } else if (downvoteDoc.exists()) {
         // User had downvoted, remove downvote and add upvote
         await deleteDoc(downvoteRef);
         newVoteCount += 2;
-        await setDoc(upvoteRef, { email: currentUser.email });
-        setUserVotes((prevVotes) => ({ ...prevVotes, [postId]: "upvoted" }));
       } else {
         // User had no previous vote, add upvote
         newVoteCount += 1;
-        await setDoc(upvoteRef, { email: currentUser.email });
-        setUserVotes((prevVotes) => ({ ...prevVotes, [postId]: "upvoted" }));
       }
+      await setDoc(upvoteRef, { email: currentUser.email });
     } else if (change === -1) {
       if (downvoteDoc.exists()) {
-        // User already downvoted, remove downvote
-        await deleteDoc(downvoteRef);
-        newVoteCount += 1;
-        setUserVotes((prevVotes) => ({ ...prevVotes, [postId]: null }));
+        // User already downvoted, do nothing
+        return;
       } else if (upvoteDoc.exists()) {
         // User had upvoted, remove upvote and add downvote
         await deleteDoc(upvoteRef);
         newVoteCount -= 2;
-        await setDoc(downvoteRef, { email: currentUser.email });
-        setUserVotes((prevVotes) => ({ ...prevVotes, [postId]: "downvoted" }));
       } else {
         // User had no previous vote, add downvote
         newVoteCount -= 1;
-        await setDoc(downvoteRef, { email: currentUser.email });
-        setUserVotes((prevVotes) => ({ ...prevVotes, [postId]: "downvoted" }));
       }
+      await setDoc(downvoteRef, { email: currentUser.email });
     }
 
     // Update vote count
@@ -165,15 +109,22 @@ const Center: React.FC = () => {
       votes: newVoteCount,
     });
 
-    // No need to update local state, as onSnapshot will handle it
+    // Update local state with new vote count
+    const newPosts = [...posts];
+    newPosts[postIndex].votes = newVoteCount;
+    setPosts(newPosts);
+
+    // Set imageLoaded to true to show the image (if applicable)
+    setImageLoaded((prevState) => ({
+      ...prevState,
+      [postId]: true,
+    }));
   };
 
   return (
     <div className="flex bg-gray-900 py-2 my-3 mr-3 px-4 w-[200rem] flex-col rounded-xl overflow-scroll">
       {loading ? (
-        <div className="flex justify-center items-center h-96">
-          <span className="text-gray-200">Loading posts...</span>
-        </div>
+        <SkeletonLoader />
       ) : (
         <ul className="text-xl text-white/80">
           {posts.map((post, index) => (
@@ -209,19 +160,11 @@ const Center: React.FC = () => {
               <div className="flex flex-row">
                 <div className="flex flex-row items-center m-2 gap-2 bg-slate-700 rounded-full p-3 w-fit">
                   <button onClick={() => handleVote(post.id, 1)}>
-                    {userVotes[post.id] === "upvoted" ? (
-                      <BiSolidUpvote />
-                    ) : (
-                      <BiUpvote />
-                    )}
+                    <BiUpvote />
                   </button>
                   <span className="text-sm">{post.votes}</span>
                   <button onClick={() => handleVote(post.id, -1)}>
-                    {userVotes[post.id] === "downvoted" ? (
-                      <BiSolidDownvote />
-                    ) : (
-                      <BiDownvote />
-                    )}
+                    <BiDownvote />
                   </button>
                 </div>
                 <div className="m-2 bg-slate-700 rounded-full p-3 w-fit">
