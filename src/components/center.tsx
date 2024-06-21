@@ -44,9 +44,12 @@ const Center: React.FC = () => {
 
   // State to track user's vote status for each post
   const [userVotes, setUserVotes] = useState<{ [postId: string]: number }>({});
+  const [commentCounts, setCommentCounts] = useState<{
+    [postId: string]: number;
+  }>({});
 
   useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, "posts"), (snapshot) => {
+    const unsubscribePosts = onSnapshot(collection(db, "posts"), (snapshot) => {
       const postsData: Post[] = [];
       const userVotesData: { [postId: string]: number } = {};
 
@@ -84,13 +87,26 @@ const Center: React.FC = () => {
               console.error("Error fetching user votes:", error);
             });
         }
+
+        // Set up real-time listener for comments
+        const unsubscribeComments = onSnapshot(
+          collection(db, "posts", postData.id, "comments"),
+          (commentsSnapshot) => {
+            setCommentCounts((prevState) => ({
+              ...prevState,
+              [postData.id]: commentsSnapshot.size,
+            }));
+          }
+        );
+
+        return () => unsubscribeComments();
       });
 
       setPosts(postsData);
       setLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => unsubscribePosts();
   }, [currentUser]);
 
   const handleImageLoaded = (postId: string) => {
@@ -180,6 +196,13 @@ const Center: React.FC = () => {
     }));
   };
 
+  const handleCommentClick = (postId: string) => {
+    const selectedPost = posts.find((post) => post.id === postId);
+    if (selectedPost) {
+      setSelectedPost(selectedPost);
+    }
+  };
+
   return (
     <div className="flex bg-gray-900 py-2 my-3 mr-3 px-4 w-[200rem] flex-col rounded-xl overflow-scroll">
       {loading ? (
@@ -244,8 +267,12 @@ const Center: React.FC = () => {
                     )}
                   </button>
                 </div>
-                <div className="m-2 bg-slate-700 rounded-full p-3">
+                <div
+                  className="m-2 bg-slate-700 rounded-full p-3 flex items-center gap-1 cursor-pointer"
+                  onClick={() => handleCommentClick(post.id)}
+                >
                   <BiComment />
+                  <span className="text-sm">{commentCounts[post.id] || 0}</span>
                 </div>
                 <div className="m-2 bg-slate-700 rounded-full p-3">
                   <FaRegShareSquare />
