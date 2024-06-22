@@ -24,6 +24,7 @@ interface PostDetailProps {
   onClose: () => void;
   userVote: number;
   handleVote: (postId: string, change: number) => void;
+  userEmail?: string | null; // Define userEmail as an optional prop
 }
 
 const PostDetail: React.FC<PostDetailProps> = ({
@@ -31,6 +32,7 @@ const PostDetail: React.FC<PostDetailProps> = ({
   onClose,
   userVote,
   handleVote,
+  userEmail,
 }) => {
   const [comment, setComment] = useState<string>("");
   const [comments, setComments] = useState<
@@ -40,7 +42,6 @@ const PostDetail: React.FC<PostDetailProps> = ({
       time: string;
     }>
   >([]);
-  const [userEmail, setUserEmail] = useState<string>("");
   const [imageLoading, setImageLoading] = useState<boolean>(true);
   const [voteCount, setVoteCount] = useState<number>(post.votes);
 

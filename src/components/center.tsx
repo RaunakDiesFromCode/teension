@@ -272,6 +272,7 @@ const Center: React.FC = () => {
           onClose={() => setSelectedPost(null)}
           userVote={userVotes[selectedPost.id]}
           handleVote={handleVote}
+          userEmail={currentUser?.email} // Pass the user's email as a prop
         />
       )}
     </div>
