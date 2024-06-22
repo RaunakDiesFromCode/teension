@@ -10,26 +10,28 @@ import { FaRegShareSquare } from "react-icons/fa";
 import {
   collection,
   addDoc,
-  updateDoc,
-  doc,
-  getDoc,
   onSnapshot,
   setDoc,
-  deleteDoc, // Add deleteDoc import for Firebase
+  deleteDoc,
+  doc,
 } from "firebase/firestore";
 import { formatDistanceToNow } from "date-fns";
-import { auth, db } from "@/app/firebase/config";
-import { onAuthStateChanged } from "firebase/auth";
+import { db } from "@/app/firebase/config";
 import { Post } from "./types";
 
 interface PostDetailProps {
   post: Post;
   onClose: () => void;
+  userVote: number;
+  handleVote: (postId: string, change: number) => void;
 }
 
-const PostDetail: React.FC<PostDetailProps> = ({ post, onClose }) => {
-  const [upvoted, setUpvoted] = useState<boolean>(false);
-  const [downvoted, setDownvoted] = useState<boolean>(false);
+const PostDetail: React.FC<PostDetailProps> = ({
+  post,
+  onClose,
+  userVote,
+  handleVote,
+}) => {
   const [comment, setComment] = useState<string>("");
   const [comments, setComments] = useState<
     Array<{
@@ -43,34 +45,8 @@ const PostDetail: React.FC<PostDetailProps> = ({ post, onClose }) => {
   const [voteCount, setVoteCount] = useState<number>(post.votes);
 
   useEffect(() => {
-    const fetchUserVotes = async () => {
-      if (!userEmail) return;
-
-      const upvoteRef = doc(db, `posts/${post.id}/upvotes/${userEmail}`);
-      const downvoteRef = doc(db, `posts/${post.id}/downvotes/${userEmail}`);
-
-      const upvoteSnap = await getDoc(upvoteRef);
-      const downvoteSnap = await getDoc(downvoteRef);
-
-      setUpvoted(upvoteSnap.exists());
-      setDownvoted(downvoteSnap.exists());
-    };
-
-    fetchUserVotes();
-  }, [post.id, userEmail]);
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setUserEmail(user.email || "");
-      }
-    });
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
     const commentsCollection = collection(db, `posts/${post.id}/comments`);
-    const unsubscribe = onSnapshot(commentsCollection, (snapshot) => {
+    const unsubscribeComments = onSnapshot(commentsCollection, (snapshot) => {
       const commentsList = snapshot.docs.map((doc) => doc.data());
       commentsList.sort(
         (a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()
@@ -80,75 +56,20 @@ const PostDetail: React.FC<PostDetailProps> = ({ post, onClose }) => {
       );
     });
 
-    return () => unsubscribe();
-  }, [post.id]);
-
-  useEffect(() => {
-    const postRef = doc(db, "posts", post.id);
-    const unsubscribe = onSnapshot(postRef, (doc) => {
-      if (doc.exists()) {
-        const { votes } = doc.data() as { votes: number };
-        setVoteCount(votes);
+    // Set up real-time listener for vote count
+    const postDoc = doc(db, "posts", post.id);
+    const unsubscribeVotes = onSnapshot(postDoc, (doc) => {
+      const data = doc.data();
+      if (data && typeof data.votes === "number") {
+        setVoteCount(data.votes);
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribeComments();
+      unsubscribeVotes();
+    };
   }, [post.id]);
-
-  const handleVote = async (voteType: "upvote" | "downvote") => {
-    if (!userEmail) {
-      alert("You need to be logged in to vote");
-      return;
-    }
-
-    let newVoteCount = voteCount;
-
-    if (voteType === "upvote") {
-      if (upvoted) {
-        // Unvoting
-        newVoteCount -= 1;
-        setUpvoted(false);
-        await deleteDoc(doc(db, `posts/${post.id}/upvotes/${userEmail}`));
-      } else {
-        // Upvoting
-        newVoteCount += downvoted ? 2 : 1; // +2 if switching from downvote
-        setUpvoted(true);
-        setDownvoted(false);
-        await setDoc(doc(db, `posts/${post.id}/upvotes/${userEmail}`), {
-          timestamp: new Date(),
-        });
-        if (downvoted) {
-          await deleteDoc(doc(db, `posts/${post.id}/downvotes/${userEmail}`));
-        }
-      }
-    } else if (voteType === "downvote") {
-      if (downvoted) {
-        // Unvoting
-        newVoteCount += 1;
-        setDownvoted(false);
-        await deleteDoc(doc(db, `posts/${post.id}/downvotes/${userEmail}`));
-      } else {
-        // Downvoting
-        newVoteCount -= upvoted ? 2 : 1; // -2 if switching from upvote
-        setDownvoted(true);
-        setUpvoted(false);
-        await setDoc(doc(db, `posts/${post.id}/downvotes/${userEmail}`), {
-          timestamp: new Date(),
-        });
-        if (upvoted) {
-          await deleteDoc(doc(db, `posts/${post.id}/upvotes/${userEmail}`));
-        }
-      }
-    }
-
-    try {
-      const postRef = doc(db, "posts", post.id);
-      await updateDoc(postRef, { votes: newVoteCount });
-      setVoteCount(newVoteCount);
-    } catch (error) {
-      console.error("Error updating vote:", error);
-    }
-  };
 
   const handleCommentSubmit = async () => {
     if (comment.trim() === "" || !userEmail) return;
@@ -201,12 +122,14 @@ const PostDetail: React.FC<PostDetailProps> = ({ post, onClose }) => {
             </div>
           )}
           <div className="flex items-center space-x-4 mb-4">
-            <button onClick={() => handleVote("upvote")}>
-              {upvoted ? <BiSolidUpvote /> : <BiUpvote />}
+            <button onClick={() => handleVote(post.id, userVote === 1 ? 0 : 1)}>
+              {userVote === 1 ? <BiSolidUpvote /> : <BiUpvote />}
             </button>
             <span className="text-lg">{voteCount}</span>
-            <button onClick={() => handleVote("downvote")}>
-              {downvoted ? <BiSolidDownvote /> : <BiDownvote />}
+            <button
+              onClick={() => handleVote(post.id, userVote === -1 ? 0 : -1)}
+            >
+              {userVote === -1 ? <BiSolidDownvote /> : <BiDownvote />}
             </button>
             <button>
               <FaRegShareSquare />

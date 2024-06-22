@@ -1,6 +1,6 @@
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import React, { useEffect, useState } from "react";
 import {
   collection,
   getDocs,
@@ -53,11 +53,8 @@ const Center: React.FC = () => {
       const postsData: Post[] = [];
       const userVotesData: { [postId: string]: number } = {};
 
-      snapshot.forEach((doc) => {
-        const postData = {
-          id: doc.id,
-          ...doc.data(),
-        } as Post;
+      const promises = snapshot.docs.map(async (doc) => {
+        const postData = { id: doc.id, ...doc.data() } as Post;
         postsData.push(postData);
 
         // Fetch user's votes for each post
@@ -72,20 +69,18 @@ const Center: React.FC = () => {
             where("email", "==", currentUser.email)
           );
 
-          Promise.all([getDocs(upvotesQuery), getDocs(downvotesQuery)])
-            .then(([upvotesSnapshot, downvotesSnapshot]) => {
-              if (!upvotesSnapshot.empty) {
-                userVotesData[postData.id] = 1; // 1 means upvoted
-              } else if (!downvotesSnapshot.empty) {
-                userVotesData[postData.id] = -1; // -1 means downvoted
-              } else {
-                userVotesData[postData.id] = 0; // 0 means no vote
-              }
-              setUserVotes(userVotesData);
-            })
-            .catch((error) => {
-              console.error("Error fetching user votes:", error);
-            });
+          const [upvotesSnapshot, downvotesSnapshot] = await Promise.all([
+            getDocs(upvotesQuery),
+            getDocs(downvotesQuery),
+          ]);
+
+          if (!upvotesSnapshot.empty) {
+            userVotesData[postData.id] = 1; // 1 means upvoted
+          } else if (!downvotesSnapshot.empty) {
+            userVotesData[postData.id] = -1; // -1 means downvoted
+          } else {
+            userVotesData[postData.id] = 0; // 0 means no vote
+          }
         }
 
         // Set up real-time listener for comments
@@ -99,21 +94,21 @@ const Center: React.FC = () => {
           }
         );
 
-        return () => unsubscribeComments();
+        return unsubscribeComments;
       });
 
-      setPosts(postsData);
-      setLoading(false);
+      Promise.all(promises).then(() => {
+        setUserVotes(userVotesData);
+        setPosts(postsData);
+        setLoading(false);
+      });
     });
 
     return () => unsubscribePosts();
   }, [currentUser]);
 
   const handleImageLoaded = (postId: string) => {
-    setImageLoaded((prevState) => ({
-      ...prevState,
-      [postId]: true,
-    }));
+    setImageLoaded((prevState) => ({ ...prevState, [postId]: true }));
   };
 
   const handleVote = async (postId: string, change: number) => {
@@ -141,10 +136,7 @@ const Center: React.FC = () => {
         );
       }
 
-      setUserVotes((prevState) => ({
-        ...prevState,
-        [postId]: 1,
-      }));
+      setUserVotes((prevState) => ({ ...prevState, [postId]: 1 }));
     } else if (change === -1 && userVotes[postId] !== -1) {
       // Downvote
       newVoteCount -= userVotes[postId] === 1 ? 2 : 1; // -2 if switching from upvote
@@ -157,10 +149,7 @@ const Center: React.FC = () => {
         await deleteDoc(doc(db, "posts", postId, "upvotes", currentUser.email));
       }
 
-      setUserVotes((prevState) => ({
-        ...prevState,
-        [postId]: -1,
-      }));
+      setUserVotes((prevState) => ({ ...prevState, [postId]: -1 }));
     } else if (
       change === 0 &&
       (userVotes[postId] === 1 || userVotes[postId] === -1)
@@ -176,27 +165,21 @@ const Center: React.FC = () => {
         newVoteCount += 1;
       }
 
-      setUserVotes((prevState) => ({
-        ...prevState,
-        [postId]: 0,
-      }));
+      setUserVotes((prevState) => ({ ...prevState, [postId]: 0 }));
     } else {
       // User is trying to upvote/downvote again after already upvoting/downvoting
       return;
     }
 
-    await updateDoc(doc(db, "posts", postId), {
-      votes: newVoteCount,
-    });
+    await updateDoc(doc(db, "posts", postId), { votes: newVoteCount });
 
     // Update posts state with new vote count
-    const newPosts = [...posts];
-    newPosts[postIndex].votes = newVoteCount;
-    setPosts(newPosts);
+    setPosts((prevPosts) => {
+      const newPosts = [...prevPosts];
+      newPosts[postIndex].votes = newVoteCount;
+      return newPosts;
+    });
   };
-
-
-
 
   const handleCommentClick = (postId: string) => {
     const selectedPost = posts.find((post) => post.id === postId);
@@ -211,7 +194,7 @@ const Center: React.FC = () => {
         <SkeletonLoader />
       ) : (
         <ul className="text-xl text-white/80">
-          {posts.map((post, index) => (
+          {posts.map((post) => (
             <li
               key={post.id}
               className="py-1 transition-all duration-100 bg-gray-800 my-3 hover:bg-slate-800 rounded-md hover:text-white flex flex-col"
@@ -242,9 +225,7 @@ const Center: React.FC = () => {
                 </div>
               </Link>
               <div className="flex flex-row">
-                <div
-                  className={`flex flex-row items-center m-2 gap-2 rounded-full p-3 bg-slate-700`}
-                >
+                <div className="flex flex-row items-center m-2 gap-2 rounded-full p-3 bg-slate-700">
                   <button
                     onClick={() =>
                       handleVote(post.id, userVotes[post.id] === 1 ? 0 : 1)
@@ -286,7 +267,12 @@ const Center: React.FC = () => {
       )}
 
       {selectedPost && (
-        <PostDetail post={selectedPost} onClose={() => setSelectedPost(null)} />
+        <PostDetail
+          post={selectedPost}
+          onClose={() => setSelectedPost(null)}
+          userVote={userVotes[selectedPost.id]}
+          handleVote={handleVote}
+        />
       )}
     </div>
   );
