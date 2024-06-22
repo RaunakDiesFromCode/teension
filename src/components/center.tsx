@@ -127,15 +127,19 @@ const Center: React.FC = () => {
 
     let newVoteCount = posts[postIndex].votes;
 
-    // Check if the user has already upvoted or downvoted this post
     if (change === 1 && userVotes[postId] !== 1) {
       // Upvote
-      newVoteCount += 1;
-
-      // Add user's email to the upvotes collection
+      newVoteCount += userVotes[postId] === -1 ? 2 : 1; // +2 if switching from downvote
       await setDoc(doc(db, "posts", postId, "upvotes", currentUser.email), {
         email: currentUser.email,
       });
+
+      // Remove from downvotes if previously downvoted
+      if (userVotes[postId] === -1) {
+        await deleteDoc(
+          doc(db, "posts", postId, "downvotes", currentUser.email)
+        );
+      }
 
       setUserVotes((prevState) => ({
         ...prevState,
@@ -143,12 +147,15 @@ const Center: React.FC = () => {
       }));
     } else if (change === -1 && userVotes[postId] !== -1) {
       // Downvote
-      newVoteCount -= 1;
-
-      // Add user's email to the downvotes collection
+      newVoteCount -= userVotes[postId] === 1 ? 2 : 1; // -2 if switching from upvote
       await setDoc(doc(db, "posts", postId, "downvotes", currentUser.email), {
         email: currentUser.email,
       });
+
+      // Remove from upvotes if previously upvoted
+      if (userVotes[postId] === 1) {
+        await deleteDoc(doc(db, "posts", postId, "upvotes", currentUser.email));
+      }
 
       setUserVotes((prevState) => ({
         ...prevState,
@@ -159,16 +166,15 @@ const Center: React.FC = () => {
       (userVotes[postId] === 1 || userVotes[postId] === -1)
     ) {
       // Unvote
-      // Remove user's email from upvotes or downvotes collection
       if (userVotes[postId] === 1) {
         await deleteDoc(doc(db, "posts", postId, "upvotes", currentUser.email));
+        newVoteCount -= 1;
       } else {
         await deleteDoc(
           doc(db, "posts", postId, "downvotes", currentUser.email)
         );
+        newVoteCount += 1;
       }
-
-      newVoteCount -= userVotes[postId]; // Subtract 1 for upvote, add 1 for downvote
 
       setUserVotes((prevState) => ({
         ...prevState,
@@ -179,22 +185,18 @@ const Center: React.FC = () => {
       return;
     }
 
-    // Update Firestore with the new vote count
     await updateDoc(doc(db, "posts", postId), {
       votes: newVoteCount,
     });
 
-    // Update local state with the new vote count
+    // Update posts state with new vote count
     const newPosts = [...posts];
     newPosts[postIndex].votes = newVoteCount;
     setPosts(newPosts);
-
-    // Set imageLoaded to true to show the image (if applicable)
-    setImageLoaded((prevState) => ({
-      ...prevState,
-      [postId]: true,
-    }));
   };
+
+
+
 
   const handleCommentClick = (postId: string) => {
     const selectedPost = posts.find((post) => post.id === postId);
