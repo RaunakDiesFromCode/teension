@@ -6,7 +6,7 @@ import {
   BiSolidDownvote,
 } from "react-icons/bi";
 import { IoClose } from "react-icons/io5";
-import { FaRegShareSquare } from "react-icons/fa";
+import { FaHeart, FaRegHeart, FaRegShareSquare } from "react-icons/fa";
 import {
   collection,
   addDoc,
@@ -14,6 +14,9 @@ import {
   setDoc,
   deleteDoc,
   doc,
+  updateDoc,
+  arrayRemove,
+  arrayUnion,
 } from "firebase/firestore";
 import { formatDistanceToNow } from "date-fns";
 import { db } from "@/app/firebase/config";
@@ -37,9 +40,12 @@ const PostDetail: React.FC<PostDetailProps> = ({
   const [comment, setComment] = useState<string>("");
   const [comments, setComments] = useState<
     Array<{
+      id: string;
       email: string;
       text: string;
       time: string;
+      likes: number;
+      likedBy: string[];
     }>
   >([]);
   const [imageLoading, setImageLoading] = useState<boolean>(true);
@@ -48,12 +54,23 @@ const PostDetail: React.FC<PostDetailProps> = ({
   useEffect(() => {
     const commentsCollection = collection(db, `posts/${post.id}/comments`);
     const unsubscribeComments = onSnapshot(commentsCollection, (snapshot) => {
-      const commentsList = snapshot.docs.map((doc) => doc.data());
+      const commentsList = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        time: doc.data().time, // Add the 'time' property
+      }));
       commentsList.sort(
         (a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()
       );
       setComments(
-        commentsList as Array<{ email: string; text: string; time: string }>
+        commentsList as Array<{
+          id: string;
+          email: string;
+          text: string;
+          time: string;
+          likes: number;
+          likedBy: string[];
+        }>
       );
     });
 
@@ -81,14 +98,31 @@ const PostDetail: React.FC<PostDetailProps> = ({
       email: userEmail,
       text: comment,
       time: timeOfPosting,
+      likes: 0,
+      likedBy: [],
     };
 
     try {
-      await addDoc(collection(db, `posts/${post.id}/comments`), newComment);
-      setComments([newComment, ...comments]);
-      setComment("");
+       await addDoc(collection(db, `posts/${post.id}/comments`), newComment);
+       setComment("");
     } catch (error) {
       console.error("Error adding comment:", error);
+    }
+  };
+
+  const handleLikeComment = async (commentId: string, isLiked: boolean) => {
+    if (!userEmail) return;
+  
+    const commentRef = doc(db, `posts/${post.id}/comments`, commentId);
+    const likedBy = comments.find((c) => c.id === commentId)?.likedBy || [];
+  
+    try {
+      await updateDoc(commentRef, {
+        likedBy: isLiked ? arrayRemove(userEmail) : arrayUnion(userEmail),
+        likes: isLiked ? likedBy.length - 1 : likedBy.length + 1,
+      });
+    } catch (error) {
+      console.error("Error liking comment:", error);
     }
   };
 
@@ -166,6 +200,22 @@ const PostDetail: React.FC<PostDetailProps> = ({
                   </em>
                 </p>
                 <p>{c.text}</p>
+                <button
+                  onClick={() =>
+                    handleLikeComment(
+                      c.id,
+                      c.likedBy.includes(userEmail as string)
+                    )
+                  }
+                  className="flex flex-row items-center gap-1 text-sm justify-center"
+                >
+                  {c.likedBy.includes(userEmail as string) ? (
+                    <FaHeart size={20}/>
+                  ) : (
+                    <FaRegHeart size={20}/>
+                  )}{" "}
+                  {c.likes}
+                </button>
               </div>
             ))}
           </div>

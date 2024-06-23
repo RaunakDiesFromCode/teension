@@ -38,7 +38,7 @@ const PostForm: React.FC<PostFormProps> = ({ onPostAdded }) => {
     }
 
     try {
-      await addPost(text, downloadURL, 1, username, description);
+      await addPost(text, downloadURL, 0, username, description);
       onPostAdded();
       setText("");
       setDescription("");

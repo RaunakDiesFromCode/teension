@@ -4,10 +4,10 @@ import { auth } from "@/app/firebase/config";
 import { useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
 import { useEffect } from "react";
-import Navbar from "@/components/navbar";
-import Left from "@/components/left";
-import Right from "@/components/right";
-import Center from "@/components/center";
+import Navbar from "@/app/components/navbar";
+import Left from "@/app/components/left";
+import Right from "@/app/components/right";
+import Center from "@/app/components/center";
 
 export default function Home() {
   const [user] = useAuthState(auth);
@@ -37,7 +37,7 @@ export default function Home() {
       </div>
       <div className="mt-[4.5rem] flex h-[90vh]">
         <Left />
-        <Center/>
+        <Center />
         <Right />
       </div>
       <button
