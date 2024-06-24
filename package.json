@@ -14,7 +14,6 @@
     "date-fns": "^3.6.0",
     "firebase": "^10.12.2",
     "next": "14.2.4",
-    "next-share": "^0.27.0",
     "postcss": "^8.4.38",
     "react": "^18",
     "react-dom": "^18",

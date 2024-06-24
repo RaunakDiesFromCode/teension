@@ -1,5 +1,3 @@
-
-
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -20,6 +18,7 @@ import { FaHeart, FaRegHeart, FaRegShareSquare } from "react-icons/fa";
 import useAuth from "@/app/firebase/useAuth";
 import SkeletonLoader from "./UI/skeletonloader";
 import PostDetail from "./postdetail";
+import ShareScreen from "./UI/sharescreen";
 
 interface Post {
   id: string;
@@ -139,6 +138,12 @@ const Center: React.FC = () => {
     }
   };
 
+  const [showShareScreen, setShowShareScreen] = useState(false); // State to manage ShareScreen visibility
+
+  const toggleShareScreen = () => {
+    setShowShareScreen((prev) => !prev);
+  };
+
   return (
     <div className="flex bg-gray-900 py-2 my-3 mr-3 px-4 w-[200rem] flex-col rounded-xl overflow-scroll">
       {loading ? (
@@ -194,9 +199,19 @@ const Center: React.FC = () => {
                   <BiComment />
                   <span className="text-sm">{commentCounts[post.id] || 0}</span>
                 </div>
-                <div className="m-2 bg-slate-700 rounded-full p-3 flex items-center gap-1 cursor-pointer">
+                <div
+                  className="m-2 bg-slate-700 rounded-full p-3 flex items-center gap-1 cursor-pointer"
+                  onClick={toggleShareScreen}
+                >
                   <FaRegShareSquare />
                 </div>
+                {/* Render ShareScreen if showShareScreen is true */}
+                {showShareScreen && (
+                  <ShareScreen onClose={toggleShareScreen} Strlink={`localhost:3000/post/${post.id}`}>
+                    {/* Pass any props or children needed by ShareScreen */}
+                  </ShareScreen>
+                )}
+                {/* Rest of your PostDetail content */}
               </div>
             </li>
           ))}

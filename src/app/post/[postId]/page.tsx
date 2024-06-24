@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import {
   doc,
-  DocumentSnapshot,
   getDoc,
   collection,
   addDoc,
@@ -11,19 +10,15 @@ import {
   updateDoc,
   setDoc,
   deleteDoc,
-  query,
-  where,
+  increment,
   arrayRemove,
   arrayUnion,
-  getDocs,
 } from "firebase/firestore";
 import { db } from "@/app/firebase/config";
 import { formatDistanceToNow } from "date-fns";
 import firebase from "firebase/compat/app";
 import Link from "next/link";
-import { BiUpvote, BiSolidUpvote, BiDownvote, BiSolidDownvote } from "react-icons/bi";
-import { IoClose } from "react-icons/io5";
-import { FaHeart, FaRegHeart, FaRegShareSquare, FaThumbsUp } from "react-icons/fa";
+import { FaHeart, FaRegHeart, FaRegShareSquare } from "react-icons/fa";
 import useAuth from "@/app/firebase/useAuth";
 
 interface Post {
@@ -51,10 +46,10 @@ export default function PostDetailPage({ params }: { params: any }) {
   const [error, setError] = useState<string | null>(null);
   const [comment, setComment] = useState<string>("");
   const [comments, setComments] = useState<Comment[]>([]);
-  const [userVote, setUserVote] = useState<number>(0);
   const [voteCount, setVoteCount] = useState<number>(0);
   const { currentUser, loading: authLoading } = useAuth();
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [postLiked, setPostLiked] = useState<boolean>(false);
 
   useEffect(() => {
     if (!authLoading) {
@@ -67,21 +62,16 @@ export default function PostDetailPage({ params }: { params: any }) {
       try {
         if (postId) {
           const postDoc = doc(db, "posts", postId);
-          const docSnap: DocumentSnapshot = await getDoc(postDoc);
+          const docSnap = await getDoc(postDoc);
           if (docSnap.exists()) {
             const postData = docSnap.data() as Post;
             setPost(postData);
             setVoteCount(postData.votes);
             if (userEmail) {
-              // Check user votes
-              const upvotesQuery = query(
-                collection(db, "posts", postId, "upvotes"),
-                where("email", "==", userEmail)
-              );
-              const downvotesQuery = query(
-                collection(db, "posts", postId, "downvotes"),
-                where("email", "==", userEmail)
-              );
+              // Check if the user has liked the post
+              const userLikeRef = doc(db, "posts", postId, "likes", userEmail);
+              const userLikeDoc = await getDoc(userLikeRef);
+              setPostLiked(userLikeDoc.exists());
             }
           } else {
             setError("Post not found");
@@ -164,57 +154,29 @@ export default function PostDetailPage({ params }: { params: any }) {
     }
   };
 
-  const handleVote = async (postId: string, change: number) => {
-    if (!currentUser || !userEmail) {
-      alert("You need to be logged in to vote");
-      return;
-    }
+  const handlePostLike = async () => {
+    if (!userEmail || !post) return;
+
+    // Toggle postLiked state and update voteCount accordingly
+    const newVoteCount = postLiked ? voteCount - 1 : voteCount + 1;
+    setVoteCount(newVoteCount);
+    setPostLiked(!postLiked);
 
     const postRef = doc(db, "posts", postId);
-    let newVoteCount = voteCount;
+    const userLikeRef = doc(db, "posts", postId, "likes", userEmail);
 
-    if (change === 1 && userVote !== 1) {
-      // Upvote
-      newVoteCount += userVote === -1 ? 2 : 1;
-      await setDoc(doc(db, "posts", postId, "upvotes", userEmail), {
-        email: userEmail,
-      });
-
-      if (userVote === -1) {
-        await deleteDoc(doc(db, "posts", postId, "downvotes", userEmail));
-      }
-
-      setUserVote(1);
-    } else if (change === -1 && userVote !== -1) {
-      // Downvote
-      newVoteCount -= userVote === 1 ? 2 : 1;
-      await setDoc(doc(db, "posts", postId, "downvotes", userEmail), {
-        email: userEmail,
-      });
-
-      if (userVote === 1) {
-        await deleteDoc(doc(db, "posts", postId, "upvotes", userEmail));
-      }
-
-      setUserVote(-1);
-    } else if (change === 0 && (userVote === 1 || userVote === -1)) {
-      // Unvote
-      if (userVote === 1) {
-        await deleteDoc(doc(db, "posts", postId, "upvotes", userEmail));
-        newVoteCount -= 1;
+    try {
+      // Update Firestore
+      if (postLiked) {
+        await deleteDoc(userLikeRef);
+        await updateDoc(postRef, { votes: increment(-1) });
       } else {
-        await deleteDoc(doc(db, "posts", postId, "downvotes", userEmail));
-        newVoteCount += 1;
+        await setDoc(userLikeRef, { email: userEmail });
+        await updateDoc(postRef, { votes: increment(1) });
       }
-
-      setUserVote(0);
-    } else {
-      // User is trying to upvote/downvote again after already upvoting/downvoting
-      return;
+    } catch (error) {
+      console.error("Error updating document: ", error);
     }
-
-    await updateDoc(postRef, { votes: newVoteCount });
-    setVoteCount(newVoteCount);
   };
 
   if (loading) {
@@ -257,8 +219,8 @@ export default function PostDetailPage({ params }: { params: any }) {
           />
         )}
         <div className="flex items-center space-x-4 mb-4">
-          <button onClick={() => handleVote(postId, userVote === 1 ? 0 : 1)}>
-            {userVote === 1 ? <FaHeart size={24}/> : <FaRegHeart size={24}/>}
+          <button onClick={handlePostLike}>
+            {postLiked ? <FaHeart size={24} /> : <FaRegHeart size={24} />}
           </button>
           <span>{voteCount}</span>
           <button>
@@ -317,4 +279,3 @@ export default function PostDetailPage({ params }: { params: any }) {
     </div>
   );
 }
-

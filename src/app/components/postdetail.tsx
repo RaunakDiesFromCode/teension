@@ -21,6 +21,7 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { db } from "@/app/firebase/config";
 import { Post } from "./types";
+import ShareScreen from "./UI/sharescreen";
 
 interface PostDetailProps {
   post: Post;
@@ -126,6 +127,12 @@ const PostDetail: React.FC<PostDetailProps> = ({
     }
   };
 
+  const [showShareScreen, setShowShareScreen] = useState(false); // State to manage ShareScreen visibility
+
+  const toggleShareScreen = () => {
+    setShowShareScreen((prev) => !prev);
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 overflow-y-auto bg-gray-900 bg-opacity-90 flex justify-center"
@@ -165,9 +172,17 @@ const PostDetail: React.FC<PostDetailProps> = ({
               )}
             </button>
             <span className="text-lg">{voteCount}</span>
-            <button>
+            <button onClick={toggleShareScreen}>
               <FaRegShareSquare size={20} />
             </button>
+            {showShareScreen && (
+              <ShareScreen
+                onClose={toggleShareScreen}
+                Strlink={`localhost:3000/post/${post.id}`}
+              >
+                {/* Pass any props or children needed by ShareScreen */}
+              </ShareScreen>
+            )}
           </div>
         </div>
         <div className="my-4">
