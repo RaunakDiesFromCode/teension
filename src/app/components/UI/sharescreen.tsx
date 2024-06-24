@@ -63,7 +63,7 @@ const ShareScreen: React.FC<ShareScreenProps> = ({ onClose, Strlink }) => {
               className={
                 showCopiedMessage
                   ? "inline-flex items-center"
-                  : "hidden inline-flex items-center"
+                  : "inline-flex items-center"
               }
             >
               <svg
