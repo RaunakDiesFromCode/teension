@@ -103,8 +103,8 @@ const PostDetail: React.FC<PostDetailProps> = ({
     };
 
     try {
-       await addDoc(collection(db, `posts/${post.id}/comments`), newComment);
-       setComment("");
+      await addDoc(collection(db, `posts/${post.id}/comments`), newComment);
+      setComment("");
     } catch (error) {
       console.error("Error adding comment:", error);
     }
@@ -112,10 +112,10 @@ const PostDetail: React.FC<PostDetailProps> = ({
 
   const handleLikeComment = async (commentId: string, isLiked: boolean) => {
     if (!userEmail) return;
-  
+
     const commentRef = doc(db, `posts/${post.id}/comments`, commentId);
     const likedBy = comments.find((c) => c.id === commentId)?.likedBy || [];
-  
+
     try {
       await updateDoc(commentRef, {
         likedBy: isLiked ? arrayRemove(userEmail) : arrayUnion(userEmail),
@@ -158,16 +158,15 @@ const PostDetail: React.FC<PostDetailProps> = ({
           )}
           <div className="flex items-center space-x-4 mb-4">
             <button onClick={() => handleVote(post.id, userVote === 1 ? 0 : 1)}>
-              {userVote === 1 ? <BiSolidUpvote /> : <BiUpvote />}
+              {userVote === 1 ? (
+                <FaHeart size={20} />
+              ) : (
+                <FaRegHeart size={20} />
+              )}
             </button>
             <span className="text-lg">{voteCount}</span>
-            <button
-              onClick={() => handleVote(post.id, userVote === -1 ? 0 : -1)}
-            >
-              {userVote === -1 ? <BiSolidDownvote /> : <BiDownvote />}
-            </button>
             <button>
-              <FaRegShareSquare />
+              <FaRegShareSquare size={20} />
             </button>
           </div>
         </div>
@@ -210,9 +209,9 @@ const PostDetail: React.FC<PostDetailProps> = ({
                   className="flex flex-row items-center gap-1 text-sm justify-center"
                 >
                   {c.likedBy.includes(userEmail as string) ? (
-                    <FaHeart size={20}/>
+                    <FaHeart />
                   ) : (
-                    <FaRegHeart size={20}/>
+                    <FaRegHeart />
                   )}{" "}
                   {c.likes}
                 </button>
