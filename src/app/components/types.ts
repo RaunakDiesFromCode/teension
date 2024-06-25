@@ -1,4 +1,6 @@
 export interface Post {
+  username: ReactNode;
+  userEmail: { seconds: number; nanoseconds: number; };
   createdAt: { seconds: number; nanoseconds: number };
   genre: string;
   id: string;

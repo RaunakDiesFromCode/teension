@@ -158,6 +158,9 @@ const PostDetail: React.FC<PostDetailProps> = ({
               {formatTimestamp(post.createdAt)}
             </span>
           </div>
+          <span className="text-xs text-opacity-50">
+            Uploaded by {post.username}
+          </span>
           <h2 className="text-3xl font-bold mb-2">{post.text}</h2>
           <p className="text-lg mb-4 -mt-2">{post.description}</p>
           {post.image && (

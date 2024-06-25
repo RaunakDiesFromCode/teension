@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { FaPencilAlt, FaSearch } from "react-icons/fa";
 import Logo from "./UI/logo";
 import { RiNotification3Line } from "react-icons/ri";
@@ -6,13 +6,35 @@ import { MdFace } from "react-icons/md";
 import { GoGear } from "react-icons/go";
 import Link from "next/link";
 import PostForm from "./postform";
+import { onAuthStateChanged, User } from "firebase/auth";
+import { doc, getDoc } from "@firebase/firestore";
+import { auth, db } from "../firebase/config";
 
 export default function Navbar() {
   const [showPostForm, setShowPostForm] = useState(false);
+const [user, setUser] = useState<User | null>(null);
+const [profilePic, setProfilePic] = useState("");
 
   const handlePostAdded = () => {
     setShowPostForm(false);
   };
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setUser(currentUser);
+      if (currentUser) {
+        const userDocRef = doc(db, "users", currentUser.uid);
+        const userDoc = await getDoc(userDocRef);
+        if (userDoc.exists()) {
+          setProfilePic(userDoc.data().profilePicture);
+        }
+      } else {
+        setProfilePic("");
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   return (
     <>
@@ -55,7 +77,17 @@ export default function Navbar() {
           </li>
           <li>
             <Link href="/about">
-              <MdFace size={25} />
+              {user ? (
+                <img
+                  src={profilePic}
+                  alt="Profile"
+                  style={{ width: 25, height: 25, borderRadius: "50%" }}
+                />
+              ) : (
+                <span>
+                  To sign in, click <Link href="/signin">here</Link>
+                </span>
+              )}
             </Link>
           </li>
           <li>
