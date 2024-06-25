@@ -1,4 +1,6 @@
 export interface Post {
+  createdAt: { seconds: number; nanoseconds: number };
+  genre: string;
   id: string;
   image: string;
   text: string;

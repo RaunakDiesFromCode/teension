@@ -1,18 +1,10 @@
 import React, { useState, useEffect } from "react";
-import {
-  BiUpvote,
-  BiSolidUpvote,
-  BiDownvote,
-  BiSolidDownvote,
-} from "react-icons/bi";
 import { IoClose } from "react-icons/io5";
 import { FaHeart, FaRegHeart, FaRegShareSquare } from "react-icons/fa";
 import {
   collection,
   addDoc,
   onSnapshot,
-  setDoc,
-  deleteDoc,
   doc,
   updateDoc,
   arrayRemove,
@@ -22,6 +14,7 @@ import { formatDistanceToNow } from "date-fns";
 import { db } from "@/app/firebase/config";
 import { Post } from "./types";
 import ShareScreen from "./UI/sharescreen";
+import Link from "next/link";
 
 interface PostDetailProps {
   post: Post;
@@ -133,6 +126,14 @@ const PostDetail: React.FC<PostDetailProps> = ({
     setShowShareScreen((prev) => !prev);
   };
 
+  const formatTimestamp = (timestamp: {
+    seconds: number;
+    nanoseconds: number;
+  }) => {
+    const date = new Date(timestamp.seconds * 1000);
+    return formatDistanceToNow(date, { addSuffix: true });
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 overflow-y-auto bg-gray-900 bg-opacity-90 flex justify-center"
@@ -142,12 +143,23 @@ const PostDetail: React.FC<PostDetailProps> = ({
         className="p-6 rounded-lg m-4 flex flex-col gap-3 w-full max-w-3xl relative"
         onClick={(e) => e.stopPropagation()}
       >
-        <button className="absolute top-4 right-4" onClick={onClose}>
+        <button className="fixed top-4 right-4" onClick={onClose}>
           <IoClose size={40} />
         </button>
         <div className="flex flex-col">
+          <div className="flex flex-row items-center -mb-2 gap-2 py-1 text-[17px]">
+            <span className="text-lg  text-opacity-50">
+              <Link href={"/"} className=" hover:text-blue-400">
+                {post.genre}
+              </Link>
+            </span>
+            ・
+            <span className="text-xs text-opacity-50 italic">
+              {formatTimestamp(post.createdAt)}
+            </span>
+          </div>
           <h2 className="text-3xl font-bold mb-2">{post.text}</h2>
-          <p className="text-lg mb-4">{post.description}</p>
+          <p className="text-lg mb-4 -mt-2">{post.description}</p>
           {post.image && (
             <div className="relative mb-4 flex items-center justify-center">
               {imageLoading && (
@@ -166,7 +178,7 @@ const PostDetail: React.FC<PostDetailProps> = ({
           <div className="flex items-center space-x-4 mb-4">
             <button onClick={() => handleVote(post.id, userVote === 1 ? 0 : 1)}>
               {userVote === 1 ? (
-                <FaHeart size={20} />
+                <FaHeart size={20} color="orangered" />
               ) : (
                 <FaRegHeart size={20} />
               )}
@@ -224,7 +236,7 @@ const PostDetail: React.FC<PostDetailProps> = ({
                   className="flex flex-row items-center gap-1 text-sm justify-center"
                 >
                   {c.likedBy.includes(userEmail as string) ? (
-                    <FaHeart />
+                    <FaHeart color="orangered" />
                   ) : (
                     <FaRegHeart />
                   )}{" "}

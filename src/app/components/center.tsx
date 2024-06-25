@@ -13,19 +13,23 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 import { db } from "@/app/firebase/config";
-import { BiComment, BiSolidLike, BiLike } from "react-icons/bi";
+import { BiComment } from "react-icons/bi";
 import { FaHeart, FaRegHeart, FaRegShareSquare } from "react-icons/fa";
 import useAuth from "@/app/firebase/useAuth";
 import SkeletonLoader from "./UI/skeletonloader";
 import PostDetail from "./postdetail";
 import ShareScreen from "./UI/sharescreen";
+import { formatDistanceToNow } from "date-fns";
 
 interface Post {
+  genre: string;
   id: string;
   image: string;
+  username: string;
   text: string;
   votes: number;
   description: string;
+  createdAt: { seconds: number; nanoseconds: number };
 }
 
 const Center: React.FC = () => {
@@ -37,11 +41,12 @@ const Center: React.FC = () => {
   );
   const { currentUser, loading: authLoading } = useAuth();
 
-  // State to track user's vote status for each post
   const [userLikes, setUserLikes] = useState<{ [postId: string]: boolean }>({});
   const [commentCounts, setCommentCounts] = useState<{
     [postId: string]: number;
   }>({});
+  const [showShareScreen, setShowShareScreen] = useState(false);
+  const [postIdForShare, setPostIdForShare] = useState<string | null>(null); // State to track postId for sharing
 
   useEffect(() => {
     const unsubscribePosts = onSnapshot(collection(db, "posts"), (snapshot) => {
@@ -52,20 +57,16 @@ const Center: React.FC = () => {
         const postData = { id: doc.id, ...doc.data() } as Post;
         postsData.push(postData);
 
-        // Fetch user's likes for each post
         if (currentUser) {
-          // Check if current user has liked this post
           const likesQuery = query(
             collection(db, "posts", postData.id, "likes"),
             where("email", "==", currentUser.email)
           );
 
           const likesSnapshot = await getDocs(likesQuery);
-
           userLikesData[postData.id] = !likesSnapshot.empty;
         }
 
-        // Set up real-time listener for comments
         const unsubscribeComments = onSnapshot(
           collection(db, "posts", postData.id, "comments"),
           (commentsSnapshot) => {
@@ -105,11 +106,9 @@ const Center: React.FC = () => {
     let newVoteCount = posts[postIndex].votes;
 
     if (userLikes[postId]) {
-      // Unlike
       newVoteCount -= 1;
       await deleteDoc(doc(db, "posts", postId, "likes", currentUser.email));
     } else {
-      // Like
       newVoteCount += 1;
       await setDoc(doc(db, "posts", postId, "likes", currentUser.email), {
         email: currentUser.email,
@@ -123,7 +122,6 @@ const Center: React.FC = () => {
       [postId]: !userLikes[postId],
     }));
 
-    // Update posts state with new vote count
     setPosts((prevPosts) => {
       const newPosts = [...prevPosts];
       newPosts[postIndex].votes = newVoteCount;
@@ -138,10 +136,17 @@ const Center: React.FC = () => {
     }
   };
 
-  const [showShareScreen, setShowShareScreen] = useState(false); // State to manage ShareScreen visibility
+  const toggleShareScreen = (postId: string) => {
+    setShowShareScreen(true);
+    setPostIdForShare(postId);
+  };
 
-  const toggleShareScreen = () => {
-    setShowShareScreen((prev) => !prev);
+  const formatTimestamp = (timestamp: {
+    seconds: number;
+    nanoseconds: number;
+  }) => {
+    const date = new Date(timestamp.seconds * 1000);
+    return formatDistanceToNow(date, { addSuffix: true });
   };
 
   return (
@@ -155,37 +160,45 @@ const Center: React.FC = () => {
               key={post.id}
               className="py-1 transition-all duration-100 bg-gray-800 my-3 hover:bg-slate-800 rounded-md hover:text-white flex flex-col"
             >
-              {/* <Link href={`/post/${post.id}`} passHref> */}
-              <Link passHref href={""}>
-                <div
-                  className="flex flex-col gap-2 px-3 py-1 text-[17px] cursor-pointer"
-                  onClick={() => setSelectedPost(post)}
-                >
-                  <span className="text-2xl font-bold">{post.text}</span>
-                  <span className="text-md my-2">{post.description}</span>
-                  {post.image && (
-                    <div className="relative">
-                      {imageLoaded[post.id] ? null : (
-                        <div className="bg-gray-700 rounded-md h-[300px] mb-2"></div>
-                      )}
-                      <Image
-                        layout="responsive"
-                        width={500}
-                        height={300}
-                        src={post.image}
-                        alt={post.text}
-                        className="w-full rounded-md"
-                        onLoad={() => handleImageLoaded(post.id)}
-                      />
-                    </div>
-                  )}
-                </div>
-              </Link>
+              <div className="flex flex-row items-center -mb-2 gap-2 px-3 py-1 text-[17px]">
+                <span className="text-lg  text-opacity-50">
+                  <Link href={"/"} className=" hover:text-blue-400">
+                    {post.genre}
+                  </Link>
+                </span>
+                ・
+                <span className="text-xs text-opacity-50 italic">
+                  {formatTimestamp(post.createdAt)}
+                </span>
+              </div>
+              <div
+                className="flex flex-col gap-2 px-3 py-1 text-[17px] cursor-pointer"
+                onClick={() => setSelectedPost(post)}
+              >
+                <span className="text-2xl font-bold">{post.text}</span>
+                <span className="text-md my-1">{post.description}</span>
+                {post.image && (
+                  <div className="relative">
+                    {imageLoaded[post.id] ? null : (
+                      <div className="bg-gray-700 rounded-md h-[300px] mb-2"></div>
+                    )}
+                    <Image
+                      layout="responsive"
+                      width={500}
+                      height={300}
+                      src={post.image}
+                      alt={post.text}
+                      className="w-full rounded-md"
+                      onLoad={() => handleImageLoaded(post.id)}
+                    />
+                  </div>
+                )}
+              </div>
               <div className="flex flex-row">
                 <div className="flex flex-row items-center m-2 gap-2 rounded-full p-3 bg-slate-700">
                   <button onClick={() => handleLike(post.id)}>
                     {userLikes[post.id] ? (
-                      <FaHeart className="text-white" />
+                      <FaHeart className="text-white" color="orangered" />
                     ) : (
                       <FaRegHeart className="text-gray-300" />
                     )}
@@ -201,17 +214,10 @@ const Center: React.FC = () => {
                 </div>
                 <div
                   className="m-2 bg-slate-700 rounded-full p-3 flex items-center gap-1 cursor-pointer"
-                  onClick={toggleShareScreen}
+                  onClick={() => toggleShareScreen(post.id)}
                 >
                   <FaRegShareSquare />
                 </div>
-                {/* Render ShareScreen if showShareScreen is true */}
-                {showShareScreen && (
-                  <ShareScreen onClose={toggleShareScreen} Strlink={`localhost:3000/post/${post.id}`}>
-                    {/* Pass any props or children needed by ShareScreen */}
-                  </ShareScreen>
-                )}
-                {/* Rest of your PostDetail content */}
               </div>
             </li>
           ))}
@@ -222,10 +228,19 @@ const Center: React.FC = () => {
         <PostDetail
           post={selectedPost}
           onClose={() => setSelectedPost(null)}
-          userVote={userLikes[selectedPost.id] ? 1 : 0} // Adjust for like status
-          handleVote={handleLike} // Adjusted to handle like
-          userEmail={currentUser?.email} // Pass the user's email as a prop
+          userVote={userLikes[selectedPost.id] ? 1 : 0}
+          handleVote={handleLike}
+          userEmail={currentUser?.email}
         />
+      )}
+
+      {showShareScreen && postIdForShare && (
+        <ShareScreen
+          onClose={() => setShowShareScreen(false)}
+          Strlink={`localhost:3000/post/${postIdForShare}`}
+        >
+          {/* Pass any props or children needed by ShareScreen */}
+        </ShareScreen>
       )}
     </div>
   );

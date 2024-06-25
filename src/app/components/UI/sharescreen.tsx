@@ -1,4 +1,6 @@
+import Link from "next/link";
 import React, { useState } from "react";
+import { FaWhatsapp } from "react-icons/fa";
 import { IoClose } from "react-icons/io5";
 
 interface ShareScreenProps {
@@ -20,7 +22,7 @@ const ShareScreen: React.FC<ShareScreenProps> = ({ onClose, Strlink }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-gray-900 bg-opacity-50 flex justify-center items-center">
+    <div className="fixed inset-0 z-50 overflow-y-auto bg-gray-900 bg-opacity-50 flex flex-col justify-center items-center">
       <div className="p-6 m-4 relative bg-slate-800 rounded-lg">
         <button
           className="absolute top-0 right-0 -mt-9 -mr-9"
@@ -30,9 +32,6 @@ const ShareScreen: React.FC<ShareScreenProps> = ({ onClose, Strlink }) => {
         </button>
 
         <div className="grid grid-cols-8 gap-2 w-full max-w-[23rem]">
-          <label htmlFor="npm-install" className="sr-only">
-            Label
-          </label>
           <input
             id="npm-install"
             type="text"
@@ -69,6 +68,15 @@ const ShareScreen: React.FC<ShareScreenProps> = ({ onClose, Strlink }) => {
               </span>
             )}
           </button>
+        </div>
+        <div className="p-6 m-4 relative bg-slate-800 rounded-lg">
+          <Link
+            href={`whatsapp://send?text=` + Strlink}
+            data-action="share/whatsapp/share"
+            target="_blank"
+          >
+            <FaWhatsapp size={50} />
+          </Link>
         </div>
       </div>
     </div>

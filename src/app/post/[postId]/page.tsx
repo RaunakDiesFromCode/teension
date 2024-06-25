@@ -27,6 +27,7 @@ interface Post {
   image?: string;
   votes: number;
   username: string;
+  genre: string;
   createdAt: firebase.firestore.Timestamp;
 }
 
@@ -203,9 +204,28 @@ export default function PostDetailPage({ params }: { params: any }) {
     );
   }
 
+  const formatTimestamp = (timestamp: {
+    seconds: number;
+    nanoseconds: number;
+  }) => {
+    const date = new Date(timestamp.seconds * 1000);
+    return formatDistanceToNow(date, { addSuffix: true });
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
       <div className="max-w-3xl mx-auto bg-gray-800 p-6 rounded-lg shadow-lg">
+        <div className="flex flex-row items-center -mb-2 gap-2 py-1 text-[17px]">
+          <span className="text-lg  text-opacity-50">
+            <Link href={"/"} className=" hover:text-blue-400">
+              {post.genre}
+            </Link>
+          </span>
+          ・
+          <span className="text-xs text-opacity-50 italic">
+            {formatTimestamp(post.createdAt)}
+          </span>
+        </div>
         <h1 className="text-3xl font-bold mb-4">{post.text}</h1>
         <p className="mb-2">
           Posted by {post.username}{" "}
@@ -220,7 +240,11 @@ export default function PostDetailPage({ params }: { params: any }) {
         )}
         <div className="flex items-center space-x-4 mb-4">
           <button onClick={handlePostLike}>
-            {postLiked ? <FaHeart size={24} /> : <FaRegHeart size={24} />}
+            {postLiked ? (
+              <FaHeart size={24} color="orangered" />
+            ) : (
+              <FaRegHeart size={24} />
+            )}
           </button>
           <span>{voteCount}</span>
           <button>
@@ -263,7 +287,7 @@ export default function PostDetailPage({ params }: { params: any }) {
               >
                 {Array.isArray(c.likedBy) &&
                 c.likedBy.includes(userEmail as string) ? (
-                  <FaHeart size={16} />
+                  <FaHeart size={16} color="orangered" />
                 ) : (
                   <FaRegHeart size={16} />
                 )}

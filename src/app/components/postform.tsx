@@ -12,12 +12,13 @@ const PostForm: React.FC<PostFormProps> = ({ onPostAdded }) => {
   const [description, setDescription] = useState("");
   const [image, setImage] = useState<File | null>(null);
   const [username, setUsername] = useState("");
+  const [genre, setGenre] = useState("");
   const [loading, setLoading] = useState(true);
   const { currentUser } = useAuth();
 
   useEffect(() => {
     if (currentUser) {
-      // setUsername(currentUser.displayName || "");
+      setUsername(currentUser.email || ""); // Set the username to the user's email
       setLoading(false);
     }
   }, [currentUser]);
@@ -38,11 +39,12 @@ const PostForm: React.FC<PostFormProps> = ({ onPostAdded }) => {
     }
 
     try {
-      await addPost(text, downloadURL, 0, username, description);
+      await addPost(text, downloadURL, 0, username, description, genre);
       onPostAdded();
       setText("");
       setDescription("");
       setImage(null);
+      setGenre("");
     } catch (error) {
       console.error(error);
     }
@@ -79,7 +81,7 @@ const PostForm: React.FC<PostFormProps> = ({ onPostAdded }) => {
         />
       </div>
       <div className="flex flex-col">
-        <label className="mb-1">{"Image (optional)"}</label>
+        <label className="mb-1">Image (optional)</label>
         <input
           type="file"
           onChange={(e) => {
@@ -89,6 +91,23 @@ const PostForm: React.FC<PostFormProps> = ({ onPostAdded }) => {
           }}
           className="p-2 bg-gray-800 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-2xl"
         />
+      </div>
+      <div className="flex flex-col">
+        <label className="mb-1">Genre</label>
+        <select
+          value={genre}
+          onChange={(e) => setGenre(e.target.value)}
+          required
+          className="p-2 bg-gray-800 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-2xl"
+        >
+          <option value="">Select a genre</option>
+          <option value="help">Help</option>
+          <option value="games">Games</option>
+          <option value="love">Love</option>
+          <option value="life">Life</option>
+          <option value="others">Others</option>
+          {/* Add more genres as needed */}
+        </select>
       </div>
       <div className="flex gap-4">
         <button
@@ -104,6 +123,7 @@ const PostForm: React.FC<PostFormProps> = ({ onPostAdded }) => {
             setText("");
             setDescription("");
             setImage(null);
+            setGenre("");
           }}
         >
           Clear
