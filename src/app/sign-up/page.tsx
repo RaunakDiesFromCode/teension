@@ -49,7 +49,7 @@ const SignUp = () => {
         const profilePictureURL = await getDownloadURL(storageRef);
 
         // Add user information to Firestore
-        await setDoc(doc(db, "users", res.user.uid), {
+        await setDoc(doc(db, "users", email), {
           email,
           name,
           profilePicture: profilePictureURL,

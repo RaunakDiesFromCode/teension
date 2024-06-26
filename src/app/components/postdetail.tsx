@@ -15,13 +15,14 @@ import { db } from "@/app/firebase/config";
 import { Post } from "./types";
 import ShareScreen from "./UI/sharescreen";
 import Link from "next/link";
+import { fetchUserName } from "./utility/fetchUserName";
 
 interface PostDetailProps {
   post: Post;
   onClose: () => void;
   userVote: number;
   handleVote: (postId: string, change: number) => void;
-  userEmail?: string | null; // Define userEmail as an optional prop
+  userEmail?: string | null;
 }
 
 const PostDetail: React.FC<PostDetailProps> = ({
@@ -40,19 +41,28 @@ const PostDetail: React.FC<PostDetailProps> = ({
       time: string;
       likes: number;
       likedBy: string[];
+      username?: string; // Add username to comment type
     }>
   >([]);
   const [imageLoading, setImageLoading] = useState<boolean>(true);
   const [voteCount, setVoteCount] = useState<number>(post.votes);
+  const [uploadedByName, setUploadedByName] = useState<string>("");
 
   useEffect(() => {
     const commentsCollection = collection(db, `posts/${post.id}/comments`);
-    const unsubscribeComments = onSnapshot(commentsCollection, (snapshot) => {
-      const commentsList = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-        time: doc.data().time, // Add the 'time' property
-      }));
+    const unsubscribeComments = onSnapshot(commentsCollection, async (snapshot) => {
+      const commentsList = await Promise.all(
+        snapshot.docs.map(async (doc) => {
+          const commentData = doc.data();
+          const username = await fetchUserName(commentData.email);
+          return {
+            id: doc.id,
+            ...commentData,
+            time: commentData.time,
+            username: username || commentData.email, // Use email if username is not found
+          };
+        })
+      );
       commentsList.sort(
         (a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()
       );
@@ -64,11 +74,11 @@ const PostDetail: React.FC<PostDetailProps> = ({
           time: string;
           likes: number;
           likedBy: string[];
+          username?: string;
         }>
       );
     });
 
-    // Set up real-time listener for vote count
     const postDoc = doc(db, "posts", post.id);
     const unsubscribeVotes = onSnapshot(postDoc, (doc) => {
       const data = doc.data();
@@ -120,7 +130,7 @@ const PostDetail: React.FC<PostDetailProps> = ({
     }
   };
 
-  const [showShareScreen, setShowShareScreen] = useState(false); // State to manage ShareScreen visibility
+  const [showShareScreen, setShowShareScreen] = useState(false);
 
   const toggleShareScreen = () => {
     setShowShareScreen((prev) => !prev);
@@ -133,6 +143,17 @@ const PostDetail: React.FC<PostDetailProps> = ({
     const date = new Date(timestamp.seconds * 1000);
     return formatDistanceToNow(date, { addSuffix: true });
   };
+
+  useEffect(() => {
+    const getUserName = async () => {
+      const userName = await fetchUserName(post.username);
+      if (userName) {
+        setUploadedByName(userName);
+      }
+    };
+
+    getUserName();
+  }, [post.username]);
 
   return (
     <div
@@ -148,8 +169,8 @@ const PostDetail: React.FC<PostDetailProps> = ({
         </button>
         <div className="flex flex-col">
           <div className="flex flex-row items-center -mb-2 gap-2 py-1 text-[17px]">
-            <span className="text-lg  text-opacity-50">
-              <Link href={"/"} className=" hover:text-blue-400">
+            <span className="text-lg text-opacity-50">
+              <Link href={"/"} className="hover:text-blue-400">
                 {post.genre}
               </Link>
             </span>
@@ -159,7 +180,7 @@ const PostDetail: React.FC<PostDetailProps> = ({
             </span>
           </div>
           <span className="text-xs text-opacity-50">
-            Uploaded by {post.username}
+            Uploaded by {uploadedByName}
           </span>
           <h2 className="text-3xl font-bold mb-2">{post.text}</h2>
           <p className="text-lg mb-4 -mt-2">{post.description}</p>
@@ -207,7 +228,7 @@ const PostDetail: React.FC<PostDetailProps> = ({
               value={comment}
               onChange={(e) => setComment(e.target.value)}
               placeholder="Add a comment"
-              className="w-full px-2 h-10 bg-transparent border-b-2 border- border-gray-300 focus:outline-none focus:border-blue-500 text-white"
+              className="w-full px-2 h-10 bg-transparent border-b-2 border-gray-300 focus:outline-none focus:border-blue-500 text-white"
             />
             <button
               onClick={handleCommentSubmit}
@@ -217,10 +238,10 @@ const PostDetail: React.FC<PostDetailProps> = ({
             </button>
           </div>
           <div className="bg-slate-800 p-2 rounded-lg text-white">
-            {comments.map((c, index) => (
-              <div key={index} className="px-2 py-2 rounded shadow mb-2">
+            {comments.map((c) => (
+              <div key={c.id} className="px-2 py-2 rounded shadow mb-2">
                 <p>
-                  <strong className="text-sm">{c.email}</strong>{" "}
+                  <strong className="text-sm">{c.username}</strong>{" "}
                   <em className="text-xs">
                     {"・" +
                       formatDistanceToNow(new Date(c.time), {

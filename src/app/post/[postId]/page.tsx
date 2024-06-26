@@ -20,6 +20,8 @@ import firebase from "firebase/compat/app";
 import Link from "next/link";
 import { FaHeart, FaRegHeart, FaRegShareSquare } from "react-icons/fa";
 import useAuth from "@/app/firebase/useAuth";
+import { fetchUserName } from "@/app/components/utility/fetchUserName";
+import { IoChevronBack } from "react-icons/io5";
 
 interface Post {
   likes: number;
@@ -38,6 +40,7 @@ interface Comment {
   time: string;
   likes: number;
   likedBy: string[];
+  username?: string;
 }
 
 export default function PostDetailPage({ params }: { params: any }) {
@@ -66,7 +69,8 @@ export default function PostDetailPage({ params }: { params: any }) {
           const docSnap = await getDoc(postDoc);
           if (docSnap.exists()) {
             const postData = docSnap.data() as Post;
-            setPost(postData);
+            const username = await fetchUserName(postData.username);
+            setPost({ ...postData, username: username || postData.username });
             setVoteCount(postData.votes);
             if (userEmail) {
               // Check if the user has liked the post
@@ -92,17 +96,27 @@ export default function PostDetailPage({ params }: { params: any }) {
   useEffect(() => {
     if (postId) {
       const commentsCollection = collection(db, `posts/${postId}/comments`);
-      const unsubscribeComments = onSnapshot(commentsCollection, (snapshot) => {
-        const commentsList = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-          time: doc.data().time,
-        }));
-        commentsList.sort(
-          (a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()
-        );
-        setComments(commentsList as Comment[]);
-      });
+      const unsubscribeComments = onSnapshot(
+        commentsCollection,
+        async (snapshot) => {
+          const commentsList = await Promise.all(
+            snapshot.docs.map(async (doc) => {
+              const commentData = doc.data();
+              const username = await fetchUserName(commentData.email);
+              return {
+                id: doc.id,
+                ...commentData,
+                time: commentData.time,
+                username: username || commentData.email,
+              };
+            })
+          );
+          commentsList.sort(
+            (a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()
+          );
+          setComments(commentsList as Comment[]);
+        }
+      );
 
       const postDoc = doc(db, "posts", postId);
       const unsubscribeVotes = onSnapshot(postDoc, (doc) => {
@@ -215,9 +229,13 @@ export default function PostDetailPage({ params }: { params: any }) {
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
       <div className="max-w-3xl mx-auto bg-gray-800 p-6 rounded-lg shadow-lg">
+        <Link href="/" passHref className="mt-4 text-blue-500 flex flex-row items-center">
+          <IoChevronBack size={20}/>
+          Back to All Posts
+        </Link>
         <div className="flex flex-row items-center -mb-2 gap-2 py-1 text-[17px]">
-          <span className="text-lg  text-opacity-50">
-            <Link href={"/"} className=" hover:text-blue-400">
+          <span className="text-lg text-opacity-50">
+            <Link href={"/"} className="hover:text-blue-400">
               {post.genre}
             </Link>
           </span>
@@ -270,7 +288,7 @@ export default function PostDetailPage({ params }: { params: any }) {
           {comments.map((c) => (
             <div key={c.id} className="bg-gray-700 p-4 mb-2 rounded-lg">
               <p>
-                <strong>{c.email}</strong>{" "}
+                <strong>{c.username}</strong>{" "}
                 <em>
                   {formatDistanceToNow(new Date(c.time), { addSuffix: true })}
                 </em>
@@ -296,9 +314,6 @@ export default function PostDetailPage({ params }: { params: any }) {
             </div>
           ))}
         </div>
-        <Link href="/" passHref className="mt-4 inline-block text-blue-500">
-          Back to All Posts
-        </Link>
       </div>
     </div>
   );
