@@ -12,7 +12,7 @@ interface Profile {
   coverPhoto: string;
 }
 
-export default function page({ params }: { params: any }) {
+export default function Page({ params }: { params: any }) {
   const email = decodeURIComponent(params.email);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
