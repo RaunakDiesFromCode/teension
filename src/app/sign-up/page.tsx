@@ -22,6 +22,10 @@ const SignUp = () => {
   const [profilePicturePreview, setProfilePicturePreview] = useState<
     string | null
   >(null);
+  const [coverPhotoFile, setCoverPhotoFile] = useState<File | null>(null);
+  const [coverPhotoPreview, setCoverPhotoPreview] = useState<string | null>(
+    null
+  );
 
   const handleProfilePictureChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -35,32 +39,64 @@ const SignUp = () => {
     }
   };
 
+  const handleCoverPhotoChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCoverPhotoFile(file);
+        setCoverPhotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSignUp = async () => {
     setError(""); // Clear previous error
     try {
       const res = await createUserWithEmailAndPassword(email, password);
-      if (res?.user && profilePictureFile) {
+      if (res?.user) {
         console.log({ res });
         sessionStorage.setItem("user", "true");
 
         const storage = getStorage();
-        const storageRef = ref(storage, `images/${profilePictureFile.name}`);
-        await uploadBytes(storageRef, profilePictureFile);
-        const profilePictureURL = await getDownloadURL(storageRef);
+        let profilePictureURL = "";
+        let coverPhotoURL = "";
 
-        // Add user information to Firestore
+        // Upload profile picture if present
+        if (profilePictureFile) {
+          const profileStorageRef = ref(
+            storage,
+            `images/${profilePictureFile.name}`
+          );
+          await uploadBytes(profileStorageRef, profilePictureFile);
+          profilePictureURL = await getDownloadURL(profileStorageRef);
+        }
+
+        // Upload cover photo if present
+        if (coverPhotoFile) {
+          const coverStorageRef = ref(storage, `images/${coverPhotoFile.name}`);
+          await uploadBytes(coverStorageRef, coverPhotoFile);
+          coverPhotoURL = await getDownloadURL(coverStorageRef);
+        }
+
+        // Add user information to Firestore, including cover photo URL if available
         await setDoc(doc(db, "users", email), {
           email,
           name,
           profilePicture: profilePictureURL,
+          coverPhoto: coverPhotoURL, // Include cover photo URL
           description,
         });
 
+        // Reset form fields
         setEmail("");
         setPassword("");
         setName("");
         setProfilePictureFile(null);
         setProfilePicturePreview(null);
+        setCoverPhotoFile(null); // Reset cover photo file
+        setCoverPhotoPreview(null); // Reset cover photo preview
         setDescription("");
       } else {
         setError("Sign-up failed. Please try again.");
@@ -139,6 +175,26 @@ const SignUp = () => {
           onChange={(e) => setDescription(e.target.value)}
           className="w-full p-3 mb-4 bg-gray-700 rounded outline-none text-white placeholder-gray-500"
         />
+        <input
+          type="file"
+          accept="image/*"
+          onChange={handleCoverPhotoChange} // This function needs to be defined to handle cover photo changes
+          className="hidden"
+          id="coverPhotoInput"
+        />
+        <label htmlFor="coverPhotoInput" className="cursor-pointer">
+          <div className="w-full bg-gray-700 rounded flex items-center justify-center overflow-hidden h-32 mb-4">
+            {coverPhotoPreview ? (
+              <img
+                src={coverPhotoPreview}
+                alt="Cover Preview"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span className="text-white text-2xl">Add Cover Photo</span>
+            )}
+          </div>
+        </label>
         <div className="relative">
           <input
             type={showPassword ? "text" : "password"}

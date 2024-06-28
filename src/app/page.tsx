@@ -4,48 +4,31 @@ import { auth } from "@/app/firebase/config";
 import { useRouter } from "next/navigation";
 import { signOut } from "firebase/auth";
 import { useEffect } from "react";
-import Navbar from "./components/navbar";
+
 import Center from "./components/center";
-import Left from "./components/left";
-import Right from "./components/right";
 
 export default function Home() {
-  const [user] = useAuthState(auth);
+  const [user, loading, error] = useAuthState(auth);
   const router = useRouter();
-  const userSession = localStorage.getItem("user");
 
   useEffect(() => {
-    if (user) {
-      localStorage.setItem("user", JSON.stringify(user));
+    if (!loading && !user) {
+      router.push("/sign-in");
     }
-  }, [user]);
+  }, [loading, user, router]);
 
-  if (!user && !userSession) {
-    router.push("/sign-in");
+
+  if (loading) {
+    return <div>Loading...</div>; // or any loading indicator you prefer
   }
-
-  const handleSignOut = async () => {
-    await signOut(auth);
-    localStorage.removeItem("user");
-    router.push("/sign-in");
-  };
 
   return (
     <div className="flex flex-col">
-      <div className="fixed top-0 left-0 right-0 z-50">
-        <Navbar />
-      </div>
-      <div className="mt-[4.5rem] flex h-[90vh]">
-        <Left />
+      <div className="flex h-[90vh]">
+        {/* <Left /> */}
         <Center />
-        <Right />
+        {/* <Right /> */}
       </div>
-      <button
-        className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded w-fit"
-        onClick={handleSignOut}
-      >
-        Sign Out
-      </button>
     </div>
   );
 }

@@ -1,3 +1,4 @@
+"use client";
 import React, { useEffect, useState } from "react";
 import { FaPencilAlt, FaSearch } from "react-icons/fa";
 import Logo from "./UI/logo";
@@ -9,11 +10,12 @@ import PostForm from "./postform";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { doc, getDoc } from "@firebase/firestore";
 import { auth, db } from "../firebase/config";
+import DropdownMenu from "./UI/DropdownMenu";
 
 export default function Navbar() {
   const [showPostForm, setShowPostForm] = useState(false);
-const [user, setUser] = useState<User | null>(null);
-const [profilePic, setProfilePic] = useState("");
+  const [user, setUser] = useState<User | null>(null);
+  const [profilePic, setProfilePic] = useState("");
 
   const handlePostAdded = () => {
     setShowPostForm(false);
@@ -36,29 +38,29 @@ const [profilePic, setProfilePic] = useState("");
     return () => unsubscribe();
   }, []);
 
+  const email = user?.email || ""; // Get the email of the logged-in user
+
   return (
     <>
       <nav className="flex justify-between bg-gray-900 py-2 mt-3 px-9">
-        <ul className="flex gap-7 items-center">
-          <li>
-            <Link href="/">
-              <Logo />
-            </Link>
-          </li>
-          <li>
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search"
-                className="rounded-xl bg-black pl-10 p-2 w-96 border border-white/50 "
-              />
-              <span className="absolute left-2 top-1/2 transform -translate-y-1/2 px-1">
-                <FaSearch />
-              </span>
-            </div>
-          </li>
-        </ul>
-        <ul className="flex gap-5 items-center">
+        <div>
+          <Link href="/">
+            <Logo />
+          </Link>
+        </div>
+        <div>
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Search"
+              className="rounded-xl bg-black pl-10 p-2 w-[50rem] border border-white/50 "
+            />
+            <span className="absolute left-2 top-1/2 transform -translate-y-1/2 px-1">
+              <FaSearch />
+            </span>
+          </div>
+        </div>
+        <ul className="flex gap-5 items-center justify-center">
           <li>
             <Link href="/">
               <button
@@ -76,24 +78,22 @@ const [profilePic, setProfilePic] = useState("");
             </Link>
           </li>
           <li>
-            <Link href="/about">
+            <Link href={`/profile/${email}`}>
               {user ? (
-                <img
+                <img className="text-white"
                   src={profilePic}
                   alt="Profile"
                   style={{ width: 25, height: 25, borderRadius: "50%" }}
                 />
               ) : (
                 <span>
-                  To sign in, click <Link href="/signin">here</Link>
+                  To sign in, click <Link href="/sign-in">here</Link>
                 </span>
               )}
             </Link>
           </li>
           <li>
-            <Link href="/about">
-              <GoGear size={25} />
-            </Link>
+            <DropdownMenu /> {/* Use the DropdownMenu component */}
           </li>
         </ul>
       </nav>

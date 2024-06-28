@@ -22,6 +22,7 @@ import { FaHeart, FaRegHeart, FaRegShareSquare } from "react-icons/fa";
 import useAuth from "@/app/firebase/useAuth";
 import { fetchUserName } from "@/app/components/utility/fetchUserName";
 import { IoChevronBack } from "react-icons/io5";
+import ShareScreen from "@/app/components/UI/sharescreen";
 
 interface Post {
   likes: number;
@@ -54,6 +55,8 @@ export default function PostDetailPage({ params }: { params: any }) {
   const { currentUser, loading: authLoading } = useAuth();
   const [userEmail, setUserEmail] = useState<string | null>(null);
   const [postLiked, setPostLiked] = useState<boolean>(false);
+  const [showShareScreen, setShowShareScreen] = useState(false);
+  const [postIdForShare, setPostIdForShare] = useState<string | null>(null); // State to track postId for sharing
 
   useEffect(() => {
     if (!authLoading) {
@@ -169,6 +172,11 @@ export default function PostDetailPage({ params }: { params: any }) {
     }
   };
 
+  const toggleShareScreen = (postId: string) => {
+    setShowShareScreen(true);
+    setPostIdForShare(postId);
+  };
+
   const handlePostLike = async () => {
     if (!userEmail || !post) return;
 
@@ -227,14 +235,18 @@ export default function PostDetailPage({ params }: { params: any }) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6">
+    <div className="min-h-screen bg-gray-900 py-1.5 text-white">
       <div className="max-w-3xl mx-auto bg-gray-800 p-6 rounded-lg shadow-lg">
-        <Link href="/" passHref className="mt-4 text-blue-500 flex flex-row items-center">
-          <IoChevronBack size={20}/>
+        <Link
+          href="/"
+          passHref
+          className="mb-4 text-blue-500 flex flex-row items-center"
+        >
+          <IoChevronBack size={20} />
           Back to All Posts
         </Link>
         <div className="flex flex-row items-center -mb-2 gap-2 py-1 text-[17px]">
-          <span className="text-lg text-opacity-50">
+          <span className="text-md text-opacity-80">
             <Link href={"/"} className="hover:text-blue-400">
               {post.genre}
             </Link>
@@ -244,11 +256,13 @@ export default function PostDetailPage({ params }: { params: any }) {
             {formatTimestamp(post.createdAt)}
           </span>
         </div>
-        <h1 className="text-3xl font-bold mb-4">{post.text}</h1>
-        <p className="mb-2">
-          Posted by {post.username}{" "}
-          {formatDistanceToNow(post.createdAt.toDate())} ago
+        <p className="mb-2 -mt-2 text-xs text-white/75">
+          {"Posted by "}
+          <Link href={"/"} className="hover:text-blue-400 ">
+            {post.username}
+          </Link>
         </p>
+        <h1 className="text-3xl font-bold mb-4">{post.text}</h1>
         {post.image && (
           <img
             src={post.image}
@@ -256,18 +270,23 @@ export default function PostDetailPage({ params }: { params: any }) {
             className="mb-4 w-full h-auto rounded-lg"
           />
         )}
-        <div className="flex items-center space-x-4 mb-4">
-          <button onClick={handlePostLike}>
-            {postLiked ? (
-              <FaHeart size={24} color="orangered" />
-            ) : (
-              <FaRegHeart size={24} />
-            )}
-          </button>
-          <span>{voteCount}</span>
-          <button>
+        <div className="flex items-center space-x-4 mb-4 ">
+          <div className="rounded-full p-3 bg-slate-700 flex flex-row gap-2 items-center">
+            <button onClick={handlePostLike}>
+              {postLiked ? (
+                <FaHeart size={24} color="orangered" />
+              ) : (
+                <FaRegHeart size={24} />
+              )}
+            </button>
+            <span>{voteCount}</span>
+          </div>
+          <div
+            className="m-2 bg-slate-700 rounded-full p-3 flex items-center gap-1 cursor-pointer"
+            onClick={() => toggleShareScreen(postId)}
+          >
             <FaRegShareSquare size={24} />
-          </button>
+          </div>
         </div>
         <div className="mb-6">
           <input
@@ -286,10 +305,10 @@ export default function PostDetailPage({ params }: { params: any }) {
         </div>
         <div>
           {comments.map((c) => (
-            <div key={c.id} className="bg-gray-700 p-4 mb-2 rounded-lg">
-              <p>
+            <div key={c.id} className="m-1 my-4 rounded-lg">
+              <p className="">
                 <strong>{c.username}</strong>{" "}
-                <em>
+                <em className="text-xs text-white/75">
                   {formatDistanceToNow(new Date(c.time), { addSuffix: true })}
                 </em>
               </p>
@@ -301,7 +320,7 @@ export default function PostDetailPage({ params }: { params: any }) {
                     c.likedBy.includes(userEmail as string)
                   )
                 }
-                className="flex items-center mt-2"
+                className="flex items-center mt-1"
               >
                 {Array.isArray(c.likedBy) &&
                 c.likedBy.includes(userEmail as string) ? (
@@ -315,6 +334,14 @@ export default function PostDetailPage({ params }: { params: any }) {
           ))}
         </div>
       </div>
+      {showShareScreen && postIdForShare && (
+        <ShareScreen
+          onClose={() => setShowShareScreen(false)}
+          Strlink={`localhost:3000/post/${postIdForShare}`}
+        >
+          {/* Pass any props or children needed by ShareScreen */}
+        </ShareScreen>
+      )}
     </div>
   );
 }

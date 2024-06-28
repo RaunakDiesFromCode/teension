@@ -4,7 +4,7 @@ const SkeletonLoader: React.FC = () => {
   const placeholderPosts = Array.from({ length: 5 });
 
   return (
-    <ul className="text-xl text-white/80">
+    <ul className="text-xl text-white/80 w-[353%]">
       {placeholderPosts.map((_, index) => (
         <li
           key={index}

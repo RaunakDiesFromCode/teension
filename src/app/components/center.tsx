@@ -17,9 +17,8 @@ import { BiComment } from "react-icons/bi";
 import { FaHeart, FaRegHeart, FaRegShareSquare } from "react-icons/fa";
 import useAuth from "@/app/firebase/useAuth";
 import SkeletonLoader from "./UI/skeletonloader";
-import PostDetail from "./postdetail";
-import ShareScreen from "./UI/sharescreen";
 import { formatDistanceToNow } from "date-fns";
+import ShareScreen from "./UI/sharescreen";
 
 interface Post {
   genre: string;
@@ -30,12 +29,12 @@ interface Post {
   votes: number;
   description: string;
   createdAt: { seconds: number; nanoseconds: number };
+  userEmail: string; // Add userEmail property
 }
 
 const Center: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [imageLoaded, setImageLoaded] = useState<{ [key: string]: boolean }>(
     {}
   );
@@ -130,10 +129,7 @@ const Center: React.FC = () => {
   };
 
   const handleCommentClick = (postId: string) => {
-    const selectedPost = posts.find((post) => post.id === postId);
-    if (selectedPost) {
-      setSelectedPost(selectedPost);
-    }
+    // No need to set selectedPost anymore
   };
 
   const toggleShareScreen = (postId: string) => {
@@ -150,7 +146,7 @@ const Center: React.FC = () => {
   };
 
   return (
-    <div className="flex bg-gray-900 py-2 my-3 mr-3 px-4 w-[200rem] flex-col rounded-xl overflow-scroll">
+    <div>
       {loading ? (
         <SkeletonLoader />
       ) : (
@@ -160,40 +156,39 @@ const Center: React.FC = () => {
               key={post.id}
               className="py-1 transition-all duration-100 bg-gray-800 my-3 hover:bg-slate-800 rounded-md hover:text-white flex flex-col"
             >
-              <div className="flex flex-row items-center -mb-2 gap-2 px-3 py-1 text-[17px]">
-                <span className="text-lg  text-opacity-50">
-                  <Link href={"/"} className=" hover:text-blue-400">
+              <div className="flex flex-row items-center -mb-2 gap-2 px-3 py-1 text-[17px] text-white/75">
+                <span className="text-md">
+                  <Link href={"/"} className="hover:text-blue-400">
                     {post.genre}
                   </Link>
                 </span>
-                ・
+                {"・"}
                 <span className="text-xs text-opacity-50 italic">
                   {formatTimestamp(post.createdAt)}
                 </span>
               </div>
-              <div
-                className="flex flex-col gap-2 px-3 py-1 text-[17px] cursor-pointer"
-                onClick={() => setSelectedPost(post)}
-              >
-                <span className="text-2xl font-bold">{post.text}</span>
-                <span className="text-md my-1">{post.description}</span>
-                {post.image && (
-                  <div className="relative">
-                    {imageLoaded[post.id] ? null : (
-                      <div className="bg-gray-700 rounded-md h-[300px] mb-2"></div>
-                    )}
-                    <Image
-                      layout="responsive"
-                      width={500}
-                      height={300}
-                      src={post.image}
-                      alt={post.text}
-                      className="w-full rounded-md"
-                      onLoad={() => handleImageLoaded(post.id)}
-                    />
-                  </div>
-                )}
-              </div>
+              <Link href={`/post/${post.id}`} passHref>
+                <div className="flex flex-col gap-2 px-3 py-1 text-[17px] cursor-pointer">
+                  <span className="text-2xl font-bold">{post.text}</span>
+                  <span className="text-md my-1">{post.description}</span>
+                  {post.image && (
+                    <div className="relative">
+                      {imageLoaded[post.id] ? null : (
+                        <div className="bg-gray-700 rounded-md h-[300px] mb-2"></div>
+                      )}
+                      <Image
+                        layout="responsive"
+                        width={500}
+                        height={300}
+                        src={post.image}
+                        alt={post.text}
+                        className="w-full rounded-md"
+                        onLoad={() => handleImageLoaded(post.id)}
+                      />
+                    </div>
+                  )}
+                </div>
+              </Link>
               <div className="flex flex-row">
                 <div className="flex flex-row items-center m-2 gap-2 rounded-full p-3 bg-slate-700">
                   <button onClick={() => handleLike(post.id)}>
@@ -205,13 +200,14 @@ const Center: React.FC = () => {
                   </button>
                   <span className="text-sm">{post.votes}</span>
                 </div>
-                <div
-                  className="m-2 bg-slate-700 rounded-full p-3 flex items-center gap-1 cursor-pointer"
-                  onClick={() => handleCommentClick(post.id)}
-                >
-                  <BiComment />
-                  <span className="text-sm">{commentCounts[post.id] || 0}</span>
-                </div>
+                <Link href={`/post/${post.id}`} passHref>
+                  <div className="m-2 bg-slate-700 rounded-full p-3 flex items-center gap-1 cursor-pointer">
+                    <BiComment />
+                    <span className="text-sm">
+                      {commentCounts[post.id] || 0}
+                    </span>
+                  </div>
+                </Link>
                 <div
                   className="m-2 bg-slate-700 rounded-full p-3 flex items-center gap-1 cursor-pointer"
                   onClick={() => toggleShareScreen(post.id)}
@@ -222,16 +218,6 @@ const Center: React.FC = () => {
             </li>
           ))}
         </ul>
-      )}
-
-      {selectedPost && (
-        <PostDetail
-          post={selectedPost}
-          onClose={() => setSelectedPost(null)}
-          userVote={userLikes[selectedPost.id] ? 1 : 0}
-          handleVote={handleLike}
-          userEmail={currentUser?.email}
-        />
       )}
 
       {showShareScreen && postIdForShare && (
