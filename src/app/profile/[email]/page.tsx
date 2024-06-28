@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { db } from "@/app/firebase/config";
 import { doc, getDoc } from "@firebase/firestore";
 import Image from "next/image";
+import { GetStaticPaths, GetStaticProps } from "next";
 
 interface Profile {
   name: string;
@@ -83,3 +84,29 @@ export default function Page({ params }: { params: any }) {
     </>
   );
 }
+
+export const getStaticPaths: GetStaticPaths = async () => {
+  // Ideally, fetch a list of emails or paths you want to pre-render
+  // For demonstration, using an empty array
+  const paths: never[] = [];
+
+  return { paths, fallback: "blocking" };
+};
+
+export const getStaticProps: GetStaticProps = async ({ params }) => {
+  try {
+    const email = decodeURIComponent(params?.email as string);
+    const postDoc = doc(db, "users", email);
+    const docSnap = await getDoc(postDoc);
+
+    if (docSnap.exists()) {
+      const profile = docSnap.data() as Profile;
+      return { props: { profile, error: null } };
+    } else {
+      return { props: { profile: null, error: "Profile not found" } };
+    }
+  } catch (error) {
+    console.error("Error fetching document:", error);
+    return { props: { profile: null, error: "Error fetching document" } };
+  }
+};
