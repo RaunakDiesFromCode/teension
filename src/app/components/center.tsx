@@ -173,9 +173,6 @@ const Center: React.FC = () => {
                   <span className="text-md my-1">{post.description}</span>
                   {post.image && (
                     <div className="relative">
-                      {imageLoaded[post.id] ? null : (
-                        <div className="bg-gray-700 rounded-md h-[300px] mb-2"></div>
-                      )}
                       <Image
                         layout="responsive"
                         width={500}

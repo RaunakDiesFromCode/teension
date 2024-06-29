@@ -1,29 +1,32 @@
-import { addDoc, collection } from "@firebase/firestore";
+import { addDoc, collection, doc, setDoc } from "@firebase/firestore";
 import { db } from "./config";
 
-const addPost = async (text: string, image: string, votes: Number, username: string, description: string, genre: string) => {
+const addPost = async (
+  text: string,
+  image: string,
+  votes: number,
+  username: string,
+  description: string,
+  genre: string
+) => {
   try {
-    const docRef = await addDoc(collection(db, "posts"), {
+    // Add the post to the "posts" collection
+    const postRef = await addDoc(collection(db, "posts"), {
       text,
       image: image || "",
       votes,
       username,
       description,
       genre,
-      createdAt: new Date() // Optionally include a timestamp
+      createdAt: new Date(), // Optionally include a timestamp
     });
-    const userRef = await addDoc(collection(db, "users", username, "posts" ), {
-      text,
-      image: image || "",
-      votes,
-      username,
-      description,
-      genre,
-      createdAt: new Date() // Optionally include a timestamp
+
+    // Add a reference to the post in the user's "posts" subcollection
+    await setDoc(doc(db, "users", username, "posts", postRef.id), {
+      postId: postRef.id,
     });
-  
-    console.log("Document written with ID: ", docRef.id);
-    console.log("Document written with ID: ", userRef.id);
+
+    console.log("Post added with ID: ", postRef.id);
   } catch (e) {
     console.error("Error adding document: ", e);
   }

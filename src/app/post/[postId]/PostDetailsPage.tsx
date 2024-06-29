@@ -56,6 +56,7 @@ export default function PostDetailPage({ postId }: { postId: string }) {
   const [postLiked, setPostLiked] = useState<boolean>(false);
   const [showShareScreen, setShowShareScreen] = useState(false);
   const [postIdForShare, setPostIdForShare] = useState<string | null>(null); // State to track postId for sharing
+  const [email, setEmail] = useState<string | null>(null);
 
   useEffect(() => {
     if (!authLoading) {
@@ -64,36 +65,37 @@ export default function PostDetailPage({ postId }: { postId: string }) {
   }, [currentUser, authLoading]);
 
   useEffect(() => {
-    const fetchPost = async () => {
-      try {
-        if (postId) {
-          const postDoc = doc(db, "posts", postId);
-          const docSnap = await getDoc(postDoc);
-          if (docSnap.exists()) {
-            const postData = docSnap.data() as Post;
-            const username = await fetchUserName(postData.username);
-            setPost({ ...postData, username: username || postData.username });
-            setVoteCount(postData.votes);
-            if (userEmail) {
-              // Check if the user has liked the post
-              const userLikeRef = doc(db, "posts", postId, "likes", userEmail);
-              const userLikeDoc = await getDoc(userLikeRef);
-              setPostLiked(userLikeDoc.exists());
-            }
-          } else {
-            setError("Post not found");
+  const fetchPost = async () => {
+    try {
+      if (postId) {
+        const postDoc = doc(db, "posts", postId);
+        const docSnap = await getDoc(postDoc);
+        if (docSnap.exists()) {
+          const postData = docSnap.data() as Post;
+          console.log(postData.username);
+          setEmail(postData.username); // Update the state instead of a let variable
+          const username = await fetchUserName(postData.username);
+          setPost({ ...postData, username: username || postData.username });
+          setVoteCount(postData.votes);
+          if (userEmail) {
+            const userLikeRef = doc(db, "posts", postId, "likes", userEmail);
+            const userLikeDoc = await getDoc(userLikeRef);
+            setPostLiked(userLikeDoc.exists());
           }
+        } else {
+          setError("Post not found");
         }
-      } catch (error) {
-        console.error("Error fetching document:", error);
-        setError("Error fetching document");
-      } finally {
-        setLoading(false);
       }
-    };
-
-    fetchPost();
-  }, [postId, userEmail]);
+    } catch (error) {
+      console.error("Error fetching document:", error);
+      setError("Error fetching document");
+    } finally {
+      setLoading(false);
+    }
+  };
+  fetchPost();
+  // Other code remains the same
+}, [postId, db, userEmail]); // Make sure to include all dependencies
 
   useEffect(() => {
     if (postId) {
@@ -257,7 +259,7 @@ export default function PostDetailPage({ postId }: { postId: string }) {
         </div>
         <p className="mb-2 -mt-2 text-xs text-white/75">
           {"Posted by "}
-          <Link href={"/"} className="hover:text-blue-400 ">
+          <Link href={`/profile/${email}`} className="hover:text-blue-400 ">
             {post.username}
           </Link>
         </p>

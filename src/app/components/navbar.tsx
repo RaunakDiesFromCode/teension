@@ -11,6 +11,7 @@ import { onAuthStateChanged, User } from "firebase/auth";
 import { doc, getDoc } from "@firebase/firestore";
 import { auth, db } from "../firebase/config";
 import DropdownMenu from "./UI/DropdownMenu";
+import Image from "next/image";
 
 export default function Navbar() {
   const [showPostForm, setShowPostForm] = useState(false);
@@ -80,7 +81,7 @@ export default function Navbar() {
           <li>
             <Link href={`/profile/${email}`}>
               {user ? (
-                <img className="text-white"
+                <Image className="text-white"
                   src={profilePic}
                   alt="Profile"
                   style={{ width: 25, height: 25, borderRadius: "50%" }}

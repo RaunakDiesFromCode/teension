@@ -57,7 +57,7 @@ const PostForm: React.FC<PostFormProps> = ({ onPostAdded }) => {
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-4 p-4 bg-gray-800 rounded-lg mx-10 shadow-lg text-white h-auto w-[90vw] "
+      className="space-y-4 p-4 bg-gray-800 rounded-lg mx-10 shadow-lg text-white h-auto w-[90vw]"
     >
       <div className="flex flex-col">
         <label className="mb-2 text-xl">Create a post</label>
@@ -106,7 +106,6 @@ const PostForm: React.FC<PostFormProps> = ({ onPostAdded }) => {
           <option value="love">Love</option>
           <option value="life">Life</option>
           <option value="others">Others</option>
-          {/* Add more genres as needed */}
         </select>
       </div>
       <div className="flex gap-4">
