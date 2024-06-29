@@ -10,8 +10,8 @@ import PostForm from "./postform";
 import { onAuthStateChanged, User } from "firebase/auth";
 import { doc, getDoc } from "@firebase/firestore";
 import { auth, db } from "../firebase/config";
-import DropdownMenu from "./UI/DropdownMenu";
 import Image from "next/image";
+import DropdownMenu from "./UI/DropdownMenu";
 
 export default function Navbar() {
   const [showPostForm, setShowPostForm] = useState(false);
@@ -81,14 +81,15 @@ export default function Navbar() {
           <li>
             <Link href={`/profile/${email}`}>
               {user ? (
-                <Image className="text-white"
+                <Image
+                  className="text-white"
                   src={profilePic}
                   alt="Profile"
                   style={{ width: 25, height: 25, borderRadius: "50%" }}
                 />
               ) : (
                 <span>
-                  To sign in, click <Link href="/sign-in">here</Link>
+                  <Link href="/sign-in">Sign-in</Link>
                 </span>
               )}
             </Link>

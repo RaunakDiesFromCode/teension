@@ -4,7 +4,7 @@ import { useCreateUserWithEmailAndPassword } from "react-firebase-hooks/auth";
 import { auth, db, storage } from "@/app/firebase/config";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import Link from "next/link";
-import { doc, setDoc } from "@firebase/firestore";
+import { doc, setDoc, serverTimestamp } from "@firebase/firestore";
 import { getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
 
 const SignUp = () => {
@@ -87,6 +87,11 @@ const SignUp = () => {
           profilePicture: profilePictureURL,
           coverPhoto: coverPhotoURL, // Include cover photo URL
           description,
+          createdAt: serverTimestamp(), // Add createdAt timestamp
+          stars: 1, // Add stars field
+          tribe: "rookie", // Add tribe field
+          fire: false, // Add fire field
+          OP: false, // Add OP field
         });
 
         // Reset form fields
@@ -113,7 +118,6 @@ const SignUp = () => {
     }
   };
 
-
   const handleEmailChange = (e: ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value);
     if (error) setError(""); // Clear error when user starts typing
@@ -129,7 +133,7 @@ const SignUp = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 text-black">
+    <div className="min-h-screen flex items-center justify-center bg-gray-900 text-black z-50">
       <div className="bg-gray-800 p-10 rounded-lg shadow-xl w-96">
         <h1 className="text-white text-2xl mb-5">Sign Up</h1>
         <input
