@@ -4,9 +4,11 @@ import useAuth from "../firebase/useAuth";
 import { arrayUnion, doc, getDoc, updateDoc } from "@firebase/firestore";
 import { db } from "../firebase/config";
 import Username from "../components/UI/username";
-import { FaRegStar, FaStar } from "react-icons/fa";
+import { FaArrowRight, FaRegStar, FaStar } from "react-icons/fa";
 import { CiLocationArrow1 } from "react-icons/ci";
 import { checkId } from "./challenges";
+import { MdDoneOutline } from "react-icons/md";
+import Spinner from "../components/UI/spinner";
 
 interface Challenge {
   id: string; // Unique identifier for the challenge
@@ -26,13 +28,14 @@ interface Profile {
   stars: number;
   fire: boolean;
   OP: boolean;
-  completedChallenges: Challenge[];
+  completedChallenges: number[]; // Changed to number[]
 }
 
 const Challenges = () => {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const { currentUser, loading: authLoading } = useAuth();
   const [completedChallenges, setCompletedChallenges] = useState<number[]>([]);
 
@@ -159,6 +162,13 @@ const Challenges = () => {
       stars: 5,
       difficulty: "Expert",
     },
+    {
+      id: 18,
+      name: "More Comming Soon",
+      description: "Stay tuned for more challenges!",
+      stars: 0,
+      difficulty: "",
+    },
   ];
 
   useEffect(() => {
@@ -180,6 +190,7 @@ const Challenges = () => {
         if (docSnap.exists()) {
           const profileData = docSnap.data() as Profile;
           setProfile(profileData);
+          setCompletedChallenges(profileData.completedChallenges || []);
         } else {
           setError("Profile not found");
         }
@@ -202,14 +213,11 @@ const Challenges = () => {
       console.log(`Challenge ${topicId} completed!`);
       profile.stars += topics.find((topic) => topic.id === topicId)?.stars || 0;
 
-      // Assuming you have a Firestore instance initialized as `db`
-      // and your profiles are stored in a collection named "profiles"
-      const profileRef = doc(db, "users", profile.email); // Reference to the user's profile document, assuming email is the document ID
+      const profileRef = doc(db, "users", profile.email);
 
-      // Update the profile document with the new challenge data
       await updateDoc(profileRef, {
-        completedChallenges: arrayUnion(topicId), // Add the completed challenge ID to the array
-        stars: profile.stars, // Update the stars count
+        completedChallenges: arrayUnion(topicId),
+        stars: profile.stars,
       });
 
       setCompletedChallenges((prev) => [...prev, topicId]);
@@ -235,34 +243,37 @@ const Challenges = () => {
   }
 
   return (
-    <>
-      <div className="flex items-center flex-col w-full h-full gap-20 mt-9 pt-9">
-        <div className="">
-          {profile ? (
-            <div className="flex flex-col items-center">
-              <Username
-                username={profile.name}
-                tribe={profile.tribe}
-                OP={profile.OP}
-                fire={profile.fire}
-              />
-              <div className="flex flex-row justify-between items-center gap-1">
-                <div className="flex items-center">
-                  <FaStar color="gold" size={20} />
-                </div>
-                <div className="flex items-center">{profile.stars}</div>
+    <div className="flex items-center flex-col w-full h-full gap-20 mt-9 pt-9">
+      <div className="">
+        {profile ? (
+          <div className="flex flex-col items-center">
+            <Username
+              username={profile.name}
+              tribe={profile.tribe}
+              OP={profile.OP}
+              fire={profile.fire}
+            />
+            <div className="flex flex-row justify-between items-center gap-1">
+              <div className="flex items-center">
+                <FaStar color="gold" size={20} />
               </div>
+              <div className="flex items-center">{profile.stars}</div>
             </div>
-          ) : (
-            <div>Profile not found</div>
-          )}
-        </div>
-        <p className="-mt-14 text-white/50 italic">
-          Complete challenges to earn stars
-        </p>
-        <div className="grid grid-cols-3 w-full gap-3 -mt-14">
-          {topics.map((topic, index) => (
-            <div key={topic.id} className="bg-slate-700 px-3 py-2 h-60 rounded">
+          </div>
+        ) : (
+          <div>Profile not found</div>
+        )}
+      </div>
+      <p className="-mt-14 text-white/50 italic">
+        Complete challenges to earn stars
+      </p>
+      <div className="grid grid-cols-2 w-full gap-3 -mt-14">
+        {topics.map((topic, index) => (
+          <div
+            key={topic.id}
+            className="relative bg-gray-800 px-3 py-3 h-60 rounded hover:bg-slate-800 transition-all duration-100 justify-between flex flex-col text-white/75 hover:text-white"
+          >
+            <div>
               <div className="flex font-bold text-2xl items-center gap-1">
                 {topic.name}
                 {index === topics.length - 1 && <CiLocationArrow1 />}
@@ -271,31 +282,55 @@ const Challenges = () => {
               <div className="flex gap-2 py-3 items-center">
                 <div className="">{topic.difficulty}</div>
                 {topic.stars !== 0 && "・"}
-                <div className=" flex items-center gap-1">
+                <div className="flex items-center gap-1">
                   {topic.stars !== 0 && topic.stars}
                   {topic.stars !== 0 && <FaStar color="gold" />}
                 </div>
               </div>
-              {completedChallenges.includes(topic.id) ? (
+            </div>
+
+            <div>
+              {/* // Adjusted button rendering logic with loading state */}
+              {isLoading ? (
                 <button
-                  className="mt-4 bg-gray-500 text-white py-1 px-3 rounded"
+                  className="mt-4 bg-gray-400 text-white py-1 px-3 rounded-lg flex items-center gap-1"
                   disabled
                 >
-                  Completed
+                  <Spinner />
+                  {/* You can replace this with a spinner or any loading indicator */}
+                </button>
+              ) : completedChallenges.includes(topic.id) ? (
+                <button
+                  className="mt-4 bg-gray-500 text-white py-1 px-3 rounded-lg flex items-center gap-1"
+                  disabled
+                >
+                  Completed Challenge
+                  <MdDoneOutline />
                 </button>
               ) : (
                 <button
-                  onClick={() => handleCompleteChallenge(topic.id)}
-                  className="mt-4 bg-blue-500 text-white py-1 px-3 rounded"
+                  onClick={() => {
+                    setIsLoading(true); // Set loading to true when button is clicked
+                    handleCompleteChallenge(topic.id).finally(() =>
+                      setIsLoading(false)
+                    ); // Reset loading state after completion
+                  }}
+                  className="mt-4 bg-blue-400/50 text-white py-1 px-3 rounded-lg flex items-center gap-1"
                 >
                   Complete Challenge
+                  <FaArrowRight />
                 </button>
               )}
             </div>
-          ))}
-        </div>
+
+            <div className="text-[10rem] font-PlayfairDisplay italic text-white/10 -mt-60 ml-52">
+              {topic.id}
+            </div>
+
+          </div>
+        ))}
       </div>
-    </>
+    </div>
   );
 };
 

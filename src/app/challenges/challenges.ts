@@ -9,6 +9,9 @@ export async function checkId(id: number, email: string): Promise<boolean> {
       const snapshot = await getDocs(postsRef);
       return !snapshot.empty;
 
+    case 5:
+      return true;
+
     default:
       return false;
   }
