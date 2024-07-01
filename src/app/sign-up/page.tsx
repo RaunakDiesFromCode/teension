@@ -6,8 +6,10 @@ import { FaEye, FaEyeSlash } from "react-icons/fa";
 import Link from "next/link";
 import { doc, setDoc, serverTimestamp } from "@firebase/firestore";
 import { getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
+import router from "next/router";
 
 const SignUp = () => {
+  const [step, setStep] = useState<number>(1);
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [name, setName] = useState<string>("");
@@ -103,6 +105,7 @@ const SignUp = () => {
         setCoverPhotoFile(null); // Reset cover photo file
         setCoverPhotoPreview(null); // Reset cover photo preview
         setDescription("");
+        router.push("/");
       } else {
         setError("Sign-up failed. Please try again.");
       }
@@ -132,110 +135,138 @@ const SignUp = () => {
     setShowPassword(!showPassword);
   };
 
+  const renderStepContent = () => {
+    switch (step) {
+      case 1:
+        return (
+          <div>
+            <h1 className="text-white text-2xl mb-5">Sign Up - Step 1</h1>
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={handleEmailChange}
+              className="w-full p-3 mb-4 bg-gray-700 rounded outline-none text-white placeholder-gray-500"
+            />
+            <input
+              type="text"
+              placeholder="Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full p-3 mb-4 bg-gray-700 rounded outline-none text-white placeholder-gray-500"
+            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Password"
+                value={password}
+                onChange={handlePasswordChange}
+                className="w-full p-3 mb-4 bg-gray-700 rounded outline-none text-white placeholder-gray-500 pr-10"
+              />
+              <button
+                onClick={toggleShowPassword}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500"
+              >
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
+              </button>
+            </div>
+            <button
+              onClick={() => setStep(2)}
+              className="w-full p-3 bg-indigo-600 rounded text-white hover:bg-indigo-500"
+            >
+              Next
+            </button>
+          </div>
+        );
+      case 2:
+        return (
+          <div>
+            <h1 className="text-white text-2xl mb-5">Sign Up - Step 2</h1>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleProfilePictureChange}
+              className="hidden"
+              id="profilePictureInput"
+            />
+            <label htmlFor="profilePictureInput" className="cursor-pointer">
+              <div className="w-20 h-20 bg-gray-700 rounded-full flex items-center justify-center overflow-hidden">
+                {profilePicturePreview ? (
+                  <img
+                    src={profilePicturePreview}
+                    alt="Profile Preview"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-white text-2xl">+</span>
+                )}
+              </div>
+              <div className="mt-2 text-sm text-gray-400">
+                Choose Profile Picture
+              </div>
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleCoverPhotoChange}
+              className="hidden"
+              id="coverPhotoInput"
+            />
+            <label htmlFor="coverPhotoInput" className="cursor-pointer">
+              <div className="w-full bg-gray-700 rounded flex items-center justify-center overflow-hidden h-32 mb-4">
+                {coverPhotoPreview ? (
+                  <img
+                    src={coverPhotoPreview}
+                    alt="Cover Preview"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-white text-2xl">Add Cover Photo</span>
+                )}
+              </div>
+            </label>
+            <button
+              onClick={() => setStep(3)}
+              className="w-full p-3 bg-indigo-600 rounded text-white hover:bg-indigo-500"
+            >
+              Next
+            </button>
+          </div>
+        );
+      case 3:
+        return (
+          <div>
+            <h1 className="text-white text-2xl mb-5">Sign Up - Step 3</h1>
+            <textarea
+              placeholder="Description (optional)"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full p-3 mb-4 bg-gray-700 rounded outline-none text-white placeholder-gray-500"
+            />
+            <button
+              onClick={handleSignUp}
+              className="w-full p-3 bg-indigo-600 rounded text-white hover:bg-indigo-500"
+              disabled={loading}
+            >
+              Sign Up
+            </button>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 text-black z-50">
-      <div className="bg-gray-800 p-10 rounded-lg shadow-xl w-96">
-        <h1 className="text-white text-2xl mb-5">Sign Up</h1>
-        <input
-          type="email"
-          placeholder="Email"
-          value={email}
-          onChange={handleEmailChange}
-          className="w-full p-3 mb-4 bg-gray-700 rounded outline-none text-white placeholder-gray-500"
-        />
-        <input
-          type="text"
-          placeholder="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className="w-full p-3 mb-4 bg-gray-700 rounded outline-none text-white placeholder-gray-500"
-        />
-        <input
-          type="file"
-          accept="image/*"
-          onChange={handleProfilePictureChange}
-          className="hidden"
-          id="profilePictureInput"
-        />
-        <label htmlFor="profilePictureInput" className="cursor-pointer">
-          <div className="w-20 h-20 bg-gray-700 rounded-full flex items-center justify-center overflow-hidden">
-            {profilePicturePreview ? (
-              <img
-                src={profilePicturePreview}
-                alt="Profile Preview"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <span className="text-white text-2xl">+</span>
-            )}
-          </div>
-          <div className="mt-2 text-sm text-gray-400">
-            Choose Profile Picture
-          </div>
-        </label>
-        <textarea
-          placeholder="Description (optional)"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="w-full p-3 mb-4 bg-gray-700 rounded outline-none text-white placeholder-gray-500"
-        />
-        <input
-          type="file"
-          accept="image/*"
-          onChange={handleCoverPhotoChange} // This function needs to be defined to handle cover photo changes
-          className="hidden"
-          id="coverPhotoInput"
-        />
-        <label htmlFor="coverPhotoInput" className="cursor-pointer">
-          <div className="w-full bg-gray-700 rounded flex items-center justify-center overflow-hidden h-32 mb-4">
-            {coverPhotoPreview ? (
-              <img
-                src={coverPhotoPreview}
-                alt="Cover Preview"
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <span className="text-white text-2xl">Add Cover Photo</span>
-            )}
-          </div>
-        </label>
-        <div className="relative">
-          <input
-            type={showPassword ? "text" : "password"}
-            placeholder="Password"
-            value={password}
-            onChange={handlePasswordChange}
-            className="w-full p-3 mb-4 bg-gray-700 rounded outline-none text-white placeholder-gray-500 pr-10"
-          />
-          <button
-            onClick={toggleShowPassword}
-            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500"
-          >
-            {showPassword ? <FaEyeSlash /> : <FaEye />}
-          </button>
-        </div>
-        {error && (
-          <p className="text-red-500 mb-4">
-            {error}{" "}
-            {error.includes("sign in") && (
-              <Link href="/sign-in" className="text-white/50 underline">
-                Sign In
-              </Link>
-            )}
-          </p>
-        )}
-        <button
-          onClick={handleSignUp}
-          className="w-full p-3 bg-indigo-600 rounded text-white hover:bg-indigo-500"
-          disabled={loading}
-        >
-          Sign Up
-        </button>
+    <div className="min-h-screen flex items-center justify-center bg-gray-800">
+      <div className="bg-gray-900 p-8 rounded shadow-lg w-96">
+        {error && <div className="text-red-500 text-sm mb-4">{error}</div>}
+        {renderStepContent()}
         <Link
           href="/sign-in"
           className="text-white/50 flex justify-center pt-2 text-sm"
         >
-          Take me to sign-in Page
+          Already have an account? Sign In
         </Link>
       </div>
     </div>

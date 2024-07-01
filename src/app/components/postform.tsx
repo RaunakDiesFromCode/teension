@@ -50,9 +50,9 @@ const PostForm: React.FC<PostFormProps> = ({ onPostAdded }) => {
     }
   };
 
-  if (loading) {
-    return <p className="text-white">Loading...</p>;
-  }
+  // if (loading) {
+  //   return <p className="text-white">Loading...</p>;
+  // }
 
   return (
     <form

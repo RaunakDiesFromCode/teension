@@ -20,6 +20,7 @@ import {
   FaHeart,
   FaRegHeart,
   FaRegShareSquare,
+  FaRegStar,
 } from "react-icons/fa";
 import { TbCrown } from "react-icons/tb";
 import useAuth from "@/app/firebase/useAuth";
@@ -221,7 +222,7 @@ export default function ProfilePage({ email }: { email: string }) {
             </div>
           </div>
 
-          <div className="mt-96">
+          <div className="-mt-[9%]">
             <Username
               username={profile.name}
               tribe={profile.tribe}
@@ -234,12 +235,11 @@ export default function ProfilePage({ email }: { email: string }) {
                 {"Member since "}
                 {formatTimestamp(profile.createdAt)}
               </div>
-              <div className="flex flex-row items-center gap-1">
-                {Array.from({ length: profile.stars }, (_, index) => (
-                  <div key={index}>
-                    <FaStar color="gold" />
-                  </div>
-                ))}
+              <div className="flex flex-row justify-between items-center gap-1">
+                <div className="flex items-center">
+                  <FaStar color="gold" size={20} />
+                </div>
+                <div className="flex items-center">{profile.stars}</div>
               </div>
             </div>
 

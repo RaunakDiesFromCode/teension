@@ -203,13 +203,13 @@ export default function PostDetailPage({ postId }: { postId: string }) {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        Loading...
-      </div>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <div className="flex justify-center items-center h-screen">
+  //       Loading...
+  //     </div>
+  //   );
+  // }
 
   if (error) {
     return (
@@ -222,7 +222,7 @@ export default function PostDetailPage({ postId }: { postId: string }) {
   if (!post) {
     return (
       <div className="flex justify-center items-center h-screen">
-        No post found for ID: {postId}
+        {/* No post found for ID: {postId} */}
       </div>
     );
   }

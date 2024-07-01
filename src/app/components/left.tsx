@@ -31,7 +31,7 @@ const Left = () => {
           </li>
           <li className="py-1 transition-all duration-100 hover:bg-slate-700 rounded-md hover:text-white">
             <Link
-              href={"/"}
+              href={"/challenges"}
               className=" flex flex-row items-center gap-2 px-2 text-[17px]"
             >
               <FaDumbbell color="cyan" size={"25px"} />
