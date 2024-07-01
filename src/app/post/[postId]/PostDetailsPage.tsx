@@ -65,37 +65,37 @@ export default function PostDetailPage({ postId }: { postId: string }) {
   }, [currentUser, authLoading]);
 
   useEffect(() => {
-  const fetchPost = async () => {
-    try {
-      if (postId) {
-        const postDoc = doc(db, "posts", postId);
-        const docSnap = await getDoc(postDoc);
-        if (docSnap.exists()) {
-          const postData = docSnap.data() as Post;
-          console.log(postData.username);
-          setEmail(postData.username); // Update the state instead of a let variable
-          const username = await fetchUserName(postData.username);
-          setPost({ ...postData, username: username || postData.username });
-          setVoteCount(postData.votes);
-          if (userEmail) {
-            const userLikeRef = doc(db, "posts", postId, "likes", userEmail);
-            const userLikeDoc = await getDoc(userLikeRef);
-            setPostLiked(userLikeDoc.exists());
+    const fetchPost = async () => {
+      try {
+        if (postId) {
+          const postDoc = doc(db, "posts", postId);
+          const docSnap = await getDoc(postDoc);
+          if (docSnap.exists()) {
+            const postData = docSnap.data() as Post;
+            console.log(postData.username);
+            setEmail(postData.username); // Update the state instead of a let variable
+            const username = await fetchUserName(postData.username);
+            setPost({ ...postData, username: username || postData.username });
+            setVoteCount(postData.votes);
+            if (userEmail) {
+              const userLikeRef = doc(db, "posts", postId, "likes", userEmail);
+              const userLikeDoc = await getDoc(userLikeRef);
+              setPostLiked(userLikeDoc.exists());
+            }
+          } else {
+            setError("Post not found");
           }
-        } else {
-          setError("Post not found");
         }
+      } catch (error) {
+        console.error("Error fetching document:", error);
+        setError("Error fetching document");
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Error fetching document:", error);
-      setError("Error fetching document");
-    } finally {
-      setLoading(false);
-    }
-  };
-  fetchPost();
-  // Other code remains the same
-}, [postId, db, userEmail]); // Make sure to include all dependencies
+    };
+    fetchPost();
+    // Other code remains the same
+  }, [postId, db, userEmail]); // Make sure to include all dependencies
 
   useEffect(() => {
     if (postId) {
@@ -150,7 +150,29 @@ export default function PostDetailPage({ postId }: { postId: string }) {
     };
 
     try {
+      // Add the new comment to the 'comments' sub-collection of the post
       await addDoc(collection(db, `posts/${postId}/comments`), newComment);
+
+      // Reference to the user's document in the 'users' collection
+      const userRef = doc(db, "users", userEmail);
+
+      // Fetch the current user's document
+      const userSnapshot = await getDoc(userRef);
+
+      if (userSnapshot.exists()) {
+        const userData = userSnapshot.data();
+
+        // Initialize commentCount to 0 if undefined, then increment by 1
+        const currentCommentCount = userData.commentCount ?? 0;
+        const updatedCommentCount = currentCommentCount + 1;
+
+        // Update the user's document with the new comment count
+        await updateDoc(userRef, { commentCount: updatedCommentCount });
+      } else {
+        console.log("Error fetching user document");
+      }
+
+      // Clear the comment input field
       setComment("");
     } catch (error) {
       console.error("Error adding comment:", error);
@@ -173,7 +195,21 @@ export default function PostDetailPage({ postId }: { postId: string }) {
     }
   };
 
-  const toggleShareScreen = (postId: string) => {
+  const toggleShareScreen = async (postId: string) => {
+    if (!(currentUser === null || currentUser.email === null)) {
+      const shareref = doc(db, "users", currentUser.email);
+      const sharesnapshot = await getDoc(shareref);
+      if (sharesnapshot.exists()) {
+        const userData = sharesnapshot.data();
+        const currentShareCount = userData.shareCount ?? 0;
+        const updatedShareCount = currentShareCount + 1;
+
+        // Update the user's document with the new comment count
+        await updateDoc(shareref, { shareCount: updatedShareCount });
+      }
+    } else {
+      console.log("Error fetching document");
+    }
     setShowShareScreen(true);
     setPostIdForShare(postId);
   };
@@ -194,9 +230,31 @@ export default function PostDetailPage({ postId }: { postId: string }) {
       if (postLiked) {
         await deleteDoc(userLikeRef);
         await updateDoc(postRef, { votes: increment(-1) });
+
+        const likeref = doc(db, "users", userEmail);
+        const likesnapshot = await getDoc(likeref);
+        if (likesnapshot.exists()) {
+          const userData = likesnapshot.data();
+          const currentLikes = userData.likes ?? 0; // Initialize to 0 if undefined
+          const updatedLikes = currentLikes - 1;
+          await updateDoc(likeref, { likes: updatedLikes });
+        } else {
+          console.log("Error fetching document");
+        }
       } else {
         await setDoc(userLikeRef, { email: userEmail });
         await updateDoc(postRef, { votes: increment(1) });
+
+        const likeref = doc(db, "users", userEmail);
+        const likesnapshot = await getDoc(likeref);
+        if (likesnapshot.exists()) {
+          const userData = likesnapshot.data();
+          const currentLikes = userData.likes ?? 0; // Initialize to 0 if undefined
+          const updatedLikes = currentLikes + 1;
+          await updateDoc(likeref, { likes: updatedLikes });
+        } else {
+          console.log("Error fetching document");
+        }
       }
     } catch (error) {
       console.error("Error updating document: ", error);

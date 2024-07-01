@@ -64,9 +64,9 @@ const Challenges = () => {
     },
     {
       id: 4,
-      name: "Like a Post",
+      name: "Like those Posts",
       description: "Like 5 posts from other users",
-      stars: 1,
+      stars: 2,
       difficulty: "Medium",
     },
     {

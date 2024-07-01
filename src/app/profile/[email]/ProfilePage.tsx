@@ -144,7 +144,19 @@ export default function ProfilePage({ email }: { email: string }) {
     console.log("Posts data:", posts);
   }, [posts]);
 
-  const toggleShareScreen = (postId: string) => {
+  const toggleShareScreen = async (postId: string) => {
+    const shareref = doc(db, "users", email);
+    const sharesnapshot = await getDoc(shareref);
+    if (sharesnapshot.exists()) {
+      const userData = sharesnapshot.data();
+      const currentShareCount = userData.shareCount ?? 0;
+      const updatedShareCount = currentShareCount + 1;
+
+      // Update the user's document with the new comment count
+      await updateDoc(shareref, { shareCount: updatedShareCount });
+    } else {
+      console.log("Error fetching document");
+    }
     setShowShareScreen(true);
     setPostIdForShare(postId);
   };
@@ -163,11 +175,33 @@ export default function ProfilePage({ email }: { email: string }) {
     if (userLikes[postId]) {
       newVoteCount -= 1;
       await deleteDoc(doc(db, "posts", postId, "likes", currentUser.email));
+
+      const likeref = doc(db, "users", currentUser.email);
+      const likesnapshot = await getDoc(likeref);
+      if (likesnapshot.exists()) {
+        const userData = likesnapshot.data();
+        const currentLikes = userData.likes ?? 0; // Initialize to 0 if undefined
+        const updatedLikes = currentLikes - 1;
+        await updateDoc(likeref, { likes: updatedLikes });
+      } else {
+        console.log("Error fetching document");
+      }
     } else {
       newVoteCount += 1;
       await setDoc(doc(db, "posts", postId, "likes", currentUser.email), {
         email: currentUser.email,
       });
+
+      const likeref = doc(db, "users", currentUser.email);
+      const likesnapshot = await getDoc(likeref);
+      if (likesnapshot.exists()) {
+        const userData = likesnapshot.data();
+        const currentLikes = userData.likes ?? 0; // Initialize to 0 if undefined
+        const updatedLikes = currentLikes + 1;
+        await updateDoc(likeref, { likes: updatedLikes });
+      } else {
+        console.log("Error fetching document");
+      }
     }
 
     await updateDoc(doc(db, "posts", postId), { votes: newVoteCount });
