@@ -12,6 +12,7 @@ import { doc, getDoc } from "@firebase/firestore";
 import { auth, db } from "../firebase/config";
 import Image from "next/image";
 import DropdownMenu from "./UI/DropdownMenu";
+import NotificationDropdownMenu from "./UI/NotificationDropdownMenu";
 
 export default function Navbar() {
   const [showPostForm, setShowPostForm] = useState(false);
@@ -74,9 +75,7 @@ export default function Navbar() {
             </Link>
           </li>
           <li>
-            <Link href="/about">
-              <RiNotification3Line size={25} />
-            </Link>
+            <NotificationDropdownMenu />
           </li>
           <li>
             <Link href={`/profile/${email}`}>

@@ -1,4 +1,10 @@
-import { addDoc, collection, doc, setDoc } from "@firebase/firestore";
+import {
+  addDoc,
+  collection,
+  doc,
+  setDoc,
+  Timestamp,
+} from "@firebase/firestore";
 import { db } from "./config";
 
 const addPost = async (
@@ -18,7 +24,7 @@ const addPost = async (
       username,
       description,
       genre,
-      createdAt: new Date(), // Optionally include a timestamp
+      createdAt: Timestamp.now(), // Use Firestore Timestamp
     });
 
     // Add a reference to the post in the user's "posts" subcollection

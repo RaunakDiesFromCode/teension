@@ -51,7 +51,7 @@ const Challenges = () => {
       id: 2,
       name: "Profile Update",
       description:
-        "Complete your profile by adding a profile picture and description",
+        "Complete your profile",
       stars: 1,
       difficulty: "Easy",
     },
@@ -72,7 +72,7 @@ const Challenges = () => {
     {
       id: 5,
       name: "Daily Active",
-      description: "Log in and interact with the app for 7 consecutive days",
+      description: "Interact with the app for 7 consecutive days",
       stars: 2,
       difficulty: "Medium",
     },
@@ -99,75 +99,68 @@ const Challenges = () => {
     },
     {
       id: 9,
-      name: "Group Member",
+      name: "Tribal",
       description:
-        "Join 3 different groups and participate in their discussions",
-      stars: 2,
+        "Join a tribe",
+      stars: 3,
       difficulty: "Hard",
     },
     {
       id: 10,
       name: "Influencer",
       description: "Gain 50 followers",
-      stars: 3,
+      stars: 5,
       difficulty: "Very Hard",
     },
     {
       id: 11,
       name: "Top Contributor",
       description: "Receive 20 likes on a single post",
-      stars: 3,
+      stars: 5,
       difficulty: "Very Hard",
     },
     {
       id: 12,
       name: "Social Butterfly",
-      description: "Interact with 30 different users",
-      stars: 3,
+      description: "Interact with 30 different posts",
+      stars: 5,
       difficulty: "Very Hard",
     },
     {
       id: 13,
-      name: "Event Organizer",
+      name: "Century",
       description:
-        "Create and manage a successful event with at least 10 attendees",
-      stars: 4,
+        "Get 100 likes on your post",
+      stars: 7,
       difficulty: "Expert",
     },
     {
       id: 14,
       name: "Content Marathon",
       description: "Post every day for a month",
-      stars: 4,
+      stars: 7,
       difficulty: "Expert",
     },
     {
       id: 15,
-      name: "Community Leader",
-      description: "Create a group and have at least 50 active members",
-      stars: 5,
+      name: "Sweet Pet",
+      description: "Get yourself a pet",
+      stars: 7,
       difficulty: "Expert",
     },
     {
       id: 16,
       name: "Viral Post",
-      description: "Have a post that gets 100 likes",
-      stars: 5,
+      description: "Have a post that gets 1000 likes",
+      stars: 7,
       difficulty: "Expert",
     },
     {
       id: 17,
-      name: "Influence Spreader",
-      description: "Be tagged in 20 different posts by other users",
-      stars: 5,
-      difficulty: "Expert",
-    },
-    {
-      id: 18,
-      name: "More Comming Soon",
-      description: "Stay tuned for more challenges!",
-      stars: 0,
-      difficulty: "",
+      name: "The Chief",
+      description: "Be the leader of your tribe",
+      stars: 15,
+      difficulty: "Impossible",
     },
   ];
 
@@ -276,15 +269,14 @@ const Challenges = () => {
             <div>
               <div className="flex font-bold text-2xl items-center gap-1">
                 {topic.name}
-                {index === topics.length - 1 && <CiLocationArrow1 />}
               </div>
               <div className="py-3">{topic.description}</div>
               <div className="flex gap-2 py-3 items-center">
                 <div className="">{topic.difficulty}</div>
-                {topic.stars !== 0 && "・"}
+                {"・"}
                 <div className="flex items-center gap-1">
-                  {topic.stars !== 0 && topic.stars}
-                  {topic.stars !== 0 && <FaStar color="gold" />}
+                  {topic.stars}
+                  {<FaStar color="gold" />}
                 </div>
               </div>
             </div>
@@ -326,9 +318,17 @@ const Challenges = () => {
             <div className="text-[10rem] font-PlayfairDisplay italic text-white/10 -mt-60 ml-52">
               {topic.id}
             </div>
-
           </div>
         ))}
+        <div className="relative bg-gray-800 px-3 py-3 h-60 rounded hover:bg-slate-800 transition-all duration-100 text-white/75 hover:text-white ">
+          <div className="h-full flex items-center flex-col justify-center">
+            <div className="flex font-bold text-2xl items-center gap-1 ">
+              {"More Comming Soon"}
+              <CiLocationArrow1 />
+            </div>
+            <div className="">{"Stay tuned for more challenges!"}</div>
+          </div>
+        </div>
       </div>
     </div>
   );
