@@ -6,7 +6,7 @@ import { db } from "../firebase/config";
 import Username from "../components/UI/username";
 import { FaArrowRight, FaRegStar, FaStar } from "react-icons/fa";
 import { CiLocationArrow1 } from "react-icons/ci";
-import { checkId } from "./challenges";
+import { checkId } from "../components/utility/challenges";
 import { MdDoneOutline } from "react-icons/md";
 import Spinner from "../components/UI/spinner";
 
@@ -50,8 +50,7 @@ const Challenges = () => {
     {
       id: 2,
       name: "Profile Update",
-      description:
-        "Complete your profile",
+      description: "Complete your profile",
       stars: 1,
       difficulty: "Easy",
     },
@@ -100,8 +99,7 @@ const Challenges = () => {
     {
       id: 9,
       name: "Tribal",
-      description:
-        "Join a tribe",
+      description: "Join a tribe",
       stars: 3,
       difficulty: "Hard",
     },
@@ -129,8 +127,7 @@ const Challenges = () => {
     {
       id: 13,
       name: "Century",
-      description:
-        "Get 100 likes on your post",
+      description: "Get 100 likes on your post",
       stars: 7,
       difficulty: "Expert",
     },

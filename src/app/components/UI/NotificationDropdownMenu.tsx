@@ -1,7 +1,13 @@
 "use client";
 import { useState, useEffect } from "react";
 import { RiNotification3Line } from "react-icons/ri";
-import { collection, getDocs } from "firebase/firestore";
+import {
+  collection,
+  doc,
+  updateDoc,
+  onSnapshot,
+  query,
+} from "firebase/firestore";
 import { db } from "@/app/firebase/config";
 import { formatDistanceToNow } from "date-fns";
 import useAuth from "@/app/firebase/useAuth";
@@ -18,20 +24,28 @@ const NotificationDropdownMenu = () => {
       post: string;
       id: string;
       name: string;
+      read: boolean;
     }[]
   >([]);
   const [loading, setLoading] = useState(true);
+  const [newNotificationCount, setNewNotificationCount] = useState(0);
 
-  const toggleDropdown = () => setIsVisible(!isVisible);
+  const toggleDropdown = () => {
+    setIsVisible(!isVisible);
+    if (isVisible) {
+      setNewNotificationCount(0); // Reset new notification count when dropdown is opened
+    }
+  };
 
   useEffect(() => {
-    const fetchNotifications = async () => {
-      if (currentUser && currentUser.email) {
-        const notificationsCollection = collection(
-          db,
-          `/users/${currentUser.email}/notification`
-        );
-        const snapshot = await getDocs(notificationsCollection);
+    if (currentUser && currentUser.email) {
+      const notificationsCollection = collection(
+        db,
+        `/users/${currentUser.email}/notification`
+      );
+
+      const notificationsQuery = query(notificationsCollection);
+      const unsubscribe = onSnapshot(notificationsQuery, (snapshot) => {
         const notificationsData = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
@@ -40,24 +54,70 @@ const NotificationDropdownMenu = () => {
           name: doc.data().name,
           field: doc.data().field,
           postid: doc.data().postid,
+          read: doc.data().read,
         }));
-        setNotifications(notificationsData);
-        setLoading(false);
-      }
-    };
 
-    fetchNotifications();
-  }, [currentUser]); // Trigger fetch on currentUser change
+        // Filter out read notifications
+        const unreadNotifications = notificationsData.filter(
+          (notification) => !notification.read
+        );
+
+        setNotifications(unreadNotifications);
+        setLoading(false);
+        setNewNotificationCount(unreadNotifications.length);
+      });
+
+      return () => unsubscribe(); // Cleanup the listener on component unmount
+    }
+  }, [currentUser]);
 
   const formatTimestamp = (timestamp: { seconds: number }) => {
     const date = new Date(timestamp.seconds * 1000);
     return formatDistanceToNow(date, { addSuffix: true });
   };
 
+  const markAsRead = async (notificationId: string) => {
+    if (currentUser && currentUser.email) {
+      const notificationRef = doc(
+        db,
+        `/users/${currentUser.email}/notification`,
+        notificationId
+      );
+      await updateDoc(notificationRef, { read: true });
+      setNotifications((prevNotifications) =>
+        prevNotifications.filter(
+          (notification) => notification.id !== notificationId
+        )
+      );
+    }
+  };
+
+  function linkMaker(notificationField: string, postId?: string) {
+    if (
+      notificationField ===
+      ("post" ||
+        "likedPost" ||
+        "commentedPost" ||
+        "commentedOnPost" ||
+        "likedComment")
+    ) {
+      return `/post/${postId}`;
+    } else if (notificationField === "challenge") {
+      return `/challenges`;
+    } else {
+      return "";
+    }
+  }
+
   return (
     <div className="flex justify-end">
-      <button onClick={toggleDropdown} className="">
+      <button onClick={toggleDropdown} className="relative">
         <RiNotification3Line size={25} />
+        {newNotificationCount > 0 && (
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full h-4 w-4 text-center text-xs">
+            {newNotificationCount}
+          </span>
+        )}
       </button>
 
       {isVisible && (
@@ -68,18 +128,20 @@ const NotificationDropdownMenu = () => {
             <p className="text-white text-center py-4">No notifications</p>
           ) : (
             notifications.map((notification) => (
-              <Link href={`/post/${notification.postid}`}>
+              <Link
+                href={linkMaker(notification.field, notification.postid) || ""}
+                key={notification.id}
+                onClick={async () => {
+                  await markAsRead(notification.id);
+                }}
+              >
                 <div
-                  key={notification.id}
-                  className="px-4 py-2 text-sm text-white hover:bg-gray-600 w-full"
+                  className={`px-4 py-2 text-sm text-white hover:bg-gray-600 w-full ${
+                    notification.read ? "bg-gray-800 text-white/60" : ""
+                  }`}
                 >
-                  {notification.field === "post" ? (
-                    <p>{notification.name} posted:</p>
-                  ) : (
-                    <p>{notification.name}</p>
-                  )}
-                  {notification.postid}
-                  <p>{notification.post}</p>
+                  <p className="font-bold text-lg">{notification.name}</p>
+                  <p className="text-white/75">{notification.post}</p>
                   <p>{formatTimestamp(notification.time)}</p>
                 </div>
               </Link>
