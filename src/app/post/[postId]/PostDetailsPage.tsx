@@ -23,6 +23,7 @@ import useAuth from "@/app/firebase/useAuth";
 import { fetchUserName } from "@/app/components/utility/fetchUserName";
 import { IoChevronBack } from "react-icons/io5";
 import ShareScreen from "@/app/components/UI/sharescreen";
+import { createNotification } from "@/app/components/utility/createNotification";
 
 interface Post {
   likes: number;
@@ -30,6 +31,7 @@ interface Post {
   image?: string;
   votes: number;
   username: string;
+  email: string;
   genre: string;
   createdAt: firebase.firestore.Timestamp;
 }
@@ -74,6 +76,7 @@ export default function PostDetailPage({ postId }: { postId: string }) {
             const postData = docSnap.data() as Post;
             console.log(postData.username);
             setEmail(postData.username); // Update the state instead of a let variable
+            postData.email = postData.username; // Update the email property
             const username = await fetchUserName(postData.username);
             setPost({ ...postData, username: username || postData.username });
             setVoteCount(postData.votes);
@@ -168,6 +171,23 @@ export default function PostDetailPage({ postId }: { postId: string }) {
 
         // Update the user's document with the new comment count
         await updateDoc(userRef, { commentCount: updatedCommentCount });
+
+        const comentorsName = await userData.name; // Await the result
+        const notificationMessage = `${
+          comentorsName ?? "Someone"
+        } commented on your your post`;
+
+        if (post) {
+          await createNotification(
+            "commentedOnPost",
+            notificationMessage,
+            postId,
+            Date.now(),
+            post.email
+          );
+        } else {
+          console.log("Post is null");
+        }
       } else {
         console.log("Error fetching user document");
       }
@@ -190,6 +210,23 @@ export default function PostDetailPage({ postId }: { postId: string }) {
         likedBy: isLiked ? arrayRemove(userEmail) : arrayUnion(userEmail),
         likes: isLiked ? likedBy.length - 1 : likedBy.length + 1,
       });
+
+      const comment = comments.find((c) => c.id === commentId);
+      let commentersEmail = comment?.email || "";
+
+      if (!isLiked) {
+        const commentLikersName = await fetchUserName(userEmail); // Await the result
+        const notificationMessage = `${
+          commentLikersName ?? "Someone"
+        } liked your comment`;
+        await createNotification(
+          "like",
+          notificationMessage, // Title of the notification
+          postId,
+          Date.now(), // Current time in milliseconds
+          commentersEmail // Dynamic username from post data
+        );
+      }
     } catch (error) {
       console.error("Error liking comment:", error);
     }
@@ -255,6 +292,19 @@ export default function PostDetailPage({ postId }: { postId: string }) {
         } else {
           console.log("Error fetching document");
         }
+
+        const likersName = await fetchUserName(currentUser?.email ?? "");
+        const notificationMessage = `${
+          likersName ?? "Someone"
+        } liked your post`;
+
+        await createNotification(
+          "like",
+          notificationMessage,
+          postId,
+          Date.now(),
+          post.email // Pass the username instead of the email
+        );
       }
     } catch (error) {
       console.error("Error updating document: ", error);

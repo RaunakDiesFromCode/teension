@@ -30,6 +30,8 @@ import Image from "next/image";
 import { BiComment } from "react-icons/bi";
 import ShareScreen from "@/app/components/UI/sharescreen";
 import Username from "@/app/components/UI/username";
+import { fetchUserName } from "@/app/components/utility/fetchUserName";
+import { createNotification } from "@/app/components/utility/createNotification";
 
 interface Profile {
   name: string;
@@ -202,6 +204,18 @@ export default function ProfilePage({ email }: { email: string }) {
       } else {
         console.log("Error fetching document");
       }
+      const post = posts[postIndex]; // Access the post object
+      // const userName = await fetchUserName(post.username); // Fetch username dynamically
+      const likersName = await fetchUserName(currentUser.email); // Await the result
+      const notificationMessage = `${likersName ?? "Someone"} liked your post`;
+
+      await createNotification(
+        "like",
+        notificationMessage, // Title of the notification
+        postId,
+        Date.now(), // Current time in milliseconds
+        post.username // Dynamic username from post data
+      );
     }
 
     await updateDoc(doc(db, "posts", postId), { votes: newVoteCount });

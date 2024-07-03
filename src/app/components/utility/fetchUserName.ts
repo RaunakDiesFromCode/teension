@@ -4,6 +4,7 @@ import { doc, getDoc } from "firebase/firestore";
 export const fetchUserName = async (email: string): Promise<string | null> => {
   try {
     if (email) {
+      console.log("Fetching user data for:", email);
       const userDocRef = doc(db, "users", email);
       const userDoc = await getDoc(userDocRef);
       if (userDoc.exists()) {

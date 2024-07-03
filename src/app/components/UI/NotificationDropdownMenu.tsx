@@ -18,7 +18,7 @@ const NotificationDropdownMenu = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [notifications, setNotifications] = useState<
     {
-      postid: string;
+      postId: string; // Ensure this matches your Firestore field name
       field: string;
       time: { seconds: number };
       post: string;
@@ -53,9 +53,11 @@ const NotificationDropdownMenu = () => {
           post: doc.data().post,
           name: doc.data().name,
           field: doc.data().field,
-          postid: doc.data().postid,
+          postId: doc.data().postId, // Ensure this matches your Firestore field name
           read: doc.data().read,
         }));
+
+        console.log("Retrieved notifications:", notificationsData);
 
         // Filter out read notifications
         const unreadNotifications = notificationsData.filter(
@@ -92,14 +94,19 @@ const NotificationDropdownMenu = () => {
     }
   };
 
-  function linkMaker(notificationField: string, postId?: string) {
+  function linkMaker(notificationField: string, postId: string) {
+    console.log(
+      "making link for Notification field:",
+      notificationField,
+      " with Post ID:",
+      postId
+    );
     if (
-      notificationField ===
-      ("post" ||
-        "likedPost" ||
-        "commentedPost" ||
-        "commentedOnPost" ||
-        "likedComment")
+      notificationField === "post" ||
+      notificationField === "likedPost" ||
+      notificationField === "commentedOnPost" ||
+      notificationField === "likedComment" ||
+      notificationField === "like"
     ) {
       return `/post/${postId}`;
     } else if (notificationField === "challenge") {
@@ -129,7 +136,7 @@ const NotificationDropdownMenu = () => {
           ) : (
             notifications.map((notification) => (
               <Link
-                href={linkMaker(notification.field, notification.postid) || ""}
+                href={linkMaker(notification.field, notification.postId) || ""}
                 key={notification.id}
                 onClick={async () => {
                   await markAsRead(notification.id);
