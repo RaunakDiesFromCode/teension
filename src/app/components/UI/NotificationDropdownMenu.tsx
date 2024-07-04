@@ -53,11 +53,12 @@ const NotificationDropdownMenu = () => {
           post: doc.data().post,
           name: doc.data().name,
           field: doc.data().field,
-          postId: doc.data().postId, // Ensure this matches your Firestore field name
+          postId: doc.data().postId,
           read: doc.data().read,
         }));
 
-        console.log("Retrieved notifications:", notificationsData);
+        // Sort notifications by timestamp (most recent first)
+        notificationsData.sort((a, b) => b.time.seconds - a.time.seconds);
 
         // Filter out read notifications
         const unreadNotifications = notificationsData.filter(
@@ -72,6 +73,7 @@ const NotificationDropdownMenu = () => {
       return () => unsubscribe(); // Cleanup the listener on component unmount
     }
   }, [currentUser]);
+
 
   const formatTimestamp = (timestamp: { seconds: number }) => {
     const date = new Date(timestamp.seconds * 1000);

@@ -25,6 +25,7 @@ import { fetchUserName } from "@/app/components/utility/fetchUserName";
 import { IoChevronBack } from "react-icons/io5";
 import ShareScreen from "@/app/components/UI/sharescreen";
 import { createNotification } from "@/app/components/utility/createNotification";
+import Username from "@/app/components/UI/username";
 
 interface Post {
   likes: number;
@@ -187,6 +188,7 @@ export default function PostDetailPage({ postId }: { postId: string }) {
       time: timeOfPosting,
       likes: 0,
       likedBy: [],
+      username: await fetchUserName(userEmail),
     };
 
     try {
@@ -299,6 +301,7 @@ export default function PostDetailPage({ postId }: { postId: string }) {
       time: timeOfPosting,
       likes: 0,
       likedBy: [],
+      username: await fetchUserName(userEmail),
     };
 
     try {
