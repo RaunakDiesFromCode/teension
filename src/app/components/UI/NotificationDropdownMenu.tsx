@@ -128,7 +128,7 @@ const NotificationDropdownMenu = () => {
       </button>
 
       {isVisible && (
-        <div className="dropdown-content bg-gray-700 rounded shadow-md mt-9 w-96 -mr-28 absolute">
+        <div className="dropdown-content bg-gray-700 rounded shadow-md mt-9 w-96 -mr-28 absolute h-[40rem] overflow-scroll">
           {loading ? (
             <p className="text-white text-center py-4">Loading...</p>
           ) : notifications.length === 0 ? (

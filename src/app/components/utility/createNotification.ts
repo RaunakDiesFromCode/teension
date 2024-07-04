@@ -2,11 +2,11 @@ import { db } from "@/app/firebase/config";
 import { addDoc, collection, Timestamp } from "@firebase/firestore";
 
 export async function createNotification(
-  field: string,
-  name: string,
-  postId: string,
+  field: string, // Assuming this is a theme in the document
+  name: string, // Assuming this is the title of the document
+  postId: string, // Assuming this is the ID of the document
   time: number, // Assuming this is in milliseconds
-  email: string
+  email: string //whome to send notification
 ) {
   console.log("Creating notification for", email);
   console.log("Field:", field);

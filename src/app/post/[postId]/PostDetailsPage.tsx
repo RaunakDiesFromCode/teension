@@ -13,6 +13,7 @@ import {
   increment,
   arrayRemove,
   arrayUnion,
+  getDocs,
 } from "firebase/firestore";
 import { db } from "@/app/firebase/config";
 import { formatDistanceToNow } from "date-fns";
@@ -44,6 +45,7 @@ interface Comment {
   likes: number;
   likedBy: string[];
   username?: string;
+  replies?: Comment[];
 }
 
 export default function PostDetailPage({ postId }: { postId: string }) {
@@ -59,6 +61,7 @@ export default function PostDetailPage({ postId }: { postId: string }) {
   const [showShareScreen, setShowShareScreen] = useState(false);
   const [postIdForShare, setPostIdForShare] = useState<string | null>(null); // State to track postId for sharing
   const [email, setEmail] = useState<string | null>(null);
+  const [replyInput, setReplyInput] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
     if (!authLoading) {
@@ -102,43 +105,77 @@ export default function PostDetailPage({ postId }: { postId: string }) {
 
   useEffect(() => {
     if (postId) {
-      const commentsCollection = collection(db, `posts/${postId}/comments`);
-      const unsubscribeComments = onSnapshot(
-        commentsCollection,
-        async (snapshot) => {
-          const commentsList = await Promise.all(
-            snapshot.docs.map(async (doc) => {
-              const commentData = doc.data();
-              const username = await fetchUserName(commentData.email);
-              return {
-                id: doc.id,
-                ...commentData,
-                time: commentData.time,
-                username: username || commentData.email,
-              };
-            })
-          );
-          commentsList.sort(
-            (a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()
-          );
-          setComments(commentsList as Comment[]);
-        }
-      );
+      const fetchPost = async () => {
+        try {
+          const postDoc = doc(db, "posts", postId);
+          const docSnap = await getDoc(postDoc);
 
-      const postDoc = doc(db, "posts", postId);
-      const unsubscribeVotes = onSnapshot(postDoc, (doc) => {
-        const data = doc.data();
-        if (data && typeof data.votes === "number") {
-          setVoteCount(data.votes);
-        }
-      });
+          if (docSnap.exists()) {
+            const postData = docSnap.data() as Post;
+            const username = await fetchUserName(postData.email);
+            setPost({ ...postData, username: username || postData.username });
+            setVoteCount(postData.votes);
 
-      return () => {
-        unsubscribeComments();
-        unsubscribeVotes();
+            // Fetch comments with their replies
+            const commentsCollection = collection(
+              db,
+              `posts/${postId}/comments`
+            );
+            const unsubscribeComments = onSnapshot(
+              commentsCollection,
+              async (snapshot) => {
+                const commentsList = await Promise.all(
+                  snapshot.docs.map(async (doc) => {
+                    const commentData = doc.data();
+                    const username = await fetchUserName(commentData.email);
+                    const repliesCollection = collection(
+                      db,
+                      `posts/${postId}/comments/${doc.id}/replies`
+                    );
+                    const repliesSnapshot = await getDocs(repliesCollection);
+                    const repliesList = repliesSnapshot.docs.map(
+                      (replyDoc) => ({
+                        id: replyDoc.id,
+                        ...replyDoc.data(),
+                      })
+                    );
+
+                    return {
+                      id: doc.id,
+                      ...commentData,
+                      time: commentData.time,
+                      username: username || commentData.email,
+                      replies: repliesList,
+                    };
+                  })
+                );
+
+                commentsList.sort(
+                  (a, b) =>
+                    new Date(b.time).getTime() - new Date(a.time).getTime()
+                );
+                setComments(commentsList as Comment[]);
+              }
+            );
+
+            return () => {
+              unsubscribeComments();
+            };
+          } else {
+            setError("Post not found");
+          }
+        } catch (error) {
+          console.error("Error fetching document:", error);
+          setError("Error fetching document");
+        } finally {
+          setLoading(false);
+        }
       };
+
+      fetchPost();
     }
-  }, [postId]);
+  }, [postId, db]);
+
 
   const handleCommentSubmit = async () => {
     if (comment.trim() === "" || !userEmail) return;
@@ -251,6 +288,76 @@ export default function PostDetailPage({ postId }: { postId: string }) {
     setPostIdForShare(postId);
   };
 
+  const handleReplySubmit = async (parentCommentId: string) => {
+    const replyText = replyInput[parentCommentId]?.trim();
+    if (!replyText || !userEmail) return;
+
+    const timeOfPosting = new Date().toISOString();
+    const newReply = {
+      email: userEmail,
+      text: replyText,
+      time: timeOfPosting,
+      likes: 0,
+      likedBy: [],
+    };
+
+    try {
+      // Add the new reply to the 'replies' subcollection of the comment
+      await addDoc(
+        collection(db, `posts/${postId}/comments/${parentCommentId}/replies`),
+        newReply
+      );
+
+      // Fetch comments with updated replies
+      const commentsCollection = collection(db, `posts/${postId}/comments`);
+      const snapshot = await getDocs(commentsCollection);
+      const updatedComments = snapshot.docs.map(async (doc) => {
+        const commentData = doc.data();
+        const username = await fetchUserName(commentData.email);
+        const repliesCollection = collection(
+          db,
+          `posts/${postId}/comments/${doc.id}/replies`
+        );
+        const repliesSnapshot = await getDocs(repliesCollection);
+        const repliesList = repliesSnapshot.docs.map((replyDoc) => ({
+          id: replyDoc.id,
+          ...replyDoc.data(),
+        }));
+
+        return {
+          id: doc.id,
+          ...commentData,
+          time: commentData.time,
+          username: username || commentData.email,
+          replies: repliesList,
+        };
+      });
+
+      const commentsWithReplies = await Promise.all(updatedComments);
+      commentsWithReplies.sort(
+        (a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()
+      );
+      setComments(commentsWithReplies as Comment[]);
+
+      // Clear the reply input field after successfully adding reply
+      setReplyInput((prev) => ({ ...prev, [parentCommentId]: "" }));
+
+      // Other logic for notifications, etc.
+    } catch (error) {
+      console.error("Error adding reply:", error);
+    }
+  };
+
+
+
+
+  const handleInputChange = (
+    event: React.ChangeEvent<HTMLInputElement>,
+    commentId: string
+  ) => {
+    setReplyInput((prev) => ({ ...prev, [commentId]: event.target.value }));
+  };
+
   const handlePostLike = async () => {
     if (!userEmail || !post) return;
 
@@ -311,14 +418,6 @@ export default function PostDetailPage({ postId }: { postId: string }) {
     }
   };
 
-  // if (loading) {
-  //   return (
-  //     <div className="flex justify-center items-center h-screen">
-  //       Loading...
-  //     </div>
-  //   );
-  // }
-
   if (error) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -342,6 +441,74 @@ export default function PostDetailPage({ postId }: { postId: string }) {
     const date = new Date(timestamp.seconds * 1000);
     return formatDistanceToNow(date, { addSuffix: true });
   };
+
+  const handleLikeReply = async (
+    commentId: string,
+    replyId: string,
+    isLiked: boolean
+  ) => {
+    if (!userEmail) return;
+
+    const replyRef = doc(
+      db,
+      `posts/${postId}/comments/${commentId}/replies`,
+      replyId
+    );
+
+    try {
+      await updateDoc(replyRef, {
+        likedBy: isLiked ? arrayRemove(userEmail) : arrayUnion(userEmail),
+        likes: increment(isLiked ? -1 : 1),
+      });
+
+      // Real-time update for likes
+      onSnapshot(replyRef, (doc) => {
+        const replyData = doc.data();
+        const updatedComments = comments.map((comment) => {
+          if (comment.id === commentId) {
+            const updatedReplies = comment.replies?.map((reply) => {
+              if (reply.id === replyId) {
+                return {
+                  ...reply,
+                  likedBy: replyData?.likedBy || [],
+                  likes: replyData?.likes || 0,
+                };
+              }
+              return reply;
+            });
+            return {
+              ...comment,
+              replies: updatedReplies,
+            };
+          }
+          return comment;
+        });
+
+        setComments(updatedComments as Comment[]);
+      });
+
+      // Optional: Add notification logic or any other actions here
+      if (!isLiked) {
+        const reply = comments
+          .find((c) => c.id === commentId)
+          ?.replies?.find((r) => r.id === replyId);
+        const replyersEmail = reply?.email || "";
+        const replyLikersName = (await fetchUserName(userEmail)) || "Someone";
+        const notificationMessage = `${replyLikersName} liked your reply`;
+
+        await createNotification(
+          "like",
+          notificationMessage,
+          postId,
+          Date.now(),
+          replyersEmail
+        );
+      }
+    } catch (error) {
+      console.error("Error liking reply:", error);
+    }
+  };
+
 
   return (
     <div className="min-h-screen bg-gray-900 py-1.5 text-white">
@@ -412,35 +579,84 @@ export default function PostDetailPage({ postId }: { postId: string }) {
             Post
           </button>
         </div>
-        <div>
-          {comments.map((c) => (
-            <div key={c.id} className="m-1 my-4 rounded-lg">
-              <p className="">
-                <strong>{c.username}</strong>{" "}
-                <em className="text-xs text-white/75">
-                  {formatDistanceToNow(new Date(c.time), { addSuffix: true })}
-                </em>
-              </p>
-              <p>{c.text}</p>
-              <button
-                onClick={() =>
-                  handleLikeComment(
-                    c.id,
-                    c.likedBy.includes(userEmail as string)
-                  )
-                }
-                className="flex items-center mt-1"
-              >
-                {Array.isArray(c.likedBy) &&
-                c.likedBy.includes(userEmail as string) ? (
-                  <FaHeart size={16} color="orangered" />
-                ) : (
-                  <FaRegHeart size={16} />
-                )}
-                <span className="ml-2">{c.likes}</span>
-              </button>
-            </div>
-          ))}
+        <div className="mt-4">
+          <div>
+            {comments.map((c) => (
+              <div key={c.id} className="m-1 my-4 rounded-lg">
+                <p className="">
+                  <strong>{c.username}</strong>{" "}
+                  <em className="text-xs text-white/75">
+                    {formatDistanceToNow(new Date(c.time), { addSuffix: true })}
+                  </em>
+                </p>
+                <p>{c.text}</p>
+                <button
+                  onClick={() =>
+                    handleLikeComment(
+                      c.id,
+                      c.likedBy.includes(userEmail as string)
+                    )
+                  }
+                  className="flex items-center mt-1"
+                >
+                  {Array.isArray(c.likedBy) &&
+                  c.likedBy.includes(userEmail as string) ? (
+                    <FaHeart size={16} color="orangered" />
+                  ) : (
+                    <FaRegHeart size={16} />
+                  )}
+                  <span className="ml-2">{c.likes}</span>
+                </button>
+                {/* Reply Section */}
+                <div className="ml-6">
+                  {c.replies?.map((r) => (
+                    <div key={r.id} className="m-1 my-2 rounded-lg">
+                      <p className="">
+                        <strong>{r.username}</strong>{" "}
+                        <em className="text-xs text-white/75">
+                          {formatDistanceToNow(new Date(r.time), {
+                            addSuffix: true,
+                          })}
+                        </em>
+                      </p>
+                      <p>{r.text}</p>
+                      <button
+                        onClick={() =>
+                          handleLikeReply(
+                            c.id,
+                            r.id,
+                            r.likedBy.includes(r.email)
+                          )
+                        }
+                        className="flex items-center mt-1"
+                      >
+                        {Array.isArray(r.likedBy) &&
+                        r.likedBy.includes(userEmail as string) ? (
+                          <FaHeart size={16} color="orangered" />
+                        ) : (
+                          <FaRegHeart size={16} />
+                        )}
+                        <span className="ml-2">{r.likes}</span>
+                      </button>
+                    </div>
+                  ))}
+                  <input
+                    type="text"
+                    value={replyInput[c.id] || ""}
+                    onChange={(e) => handleInputChange(e, c.id)}
+                    placeholder="Reply to this comment"
+                    className="w-full p-2 mb-2 border-b-2 border-gray-300 focus:border-blue-500 focus:outline-none bg-transparent text-white"
+                  />
+                  <button
+                    onClick={() => handleReplySubmit(c.id)}
+                    className="w-full bg-blue-500 p-2 rounded-lg"
+                  >
+                    Reply
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
       {showShareScreen && postIdForShare && (
