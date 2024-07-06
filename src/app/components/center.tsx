@@ -22,6 +22,7 @@ import { formatDistanceToNow } from "date-fns";
 import ShareScreen from "./UI/sharescreen";
 import { createNotification } from "./utility/createNotification";
 import { fetchUserName } from "./utility/fetchUserName";
+import { commentCount } from "./utility/commentCount";
 
 interface Post {
   genre: string;
@@ -54,6 +55,7 @@ const Center: React.FC = () => {
     const unsubscribePosts = onSnapshot(collection(db, "posts"), (snapshot) => {
       const postsData: Post[] = [];
       const userLikesData: { [postId: string]: boolean } = {};
+      const commentCountsData: { [postId: string]: number } = {};
 
       const promises = snapshot.docs.map(async (doc) => {
         const postData = { id: doc.id, ...doc.data() } as Post;
@@ -69,17 +71,10 @@ const Center: React.FC = () => {
           userLikesData[postData.id] = !likesSnapshot.empty;
         }
 
-        const unsubscribeComments = onSnapshot(
-          collection(db, "posts", postData.id, "comments"),
-          (commentsSnapshot) => {
-            setCommentCounts((prevState) => ({
-              ...prevState,
-              [postData.id]: commentsSnapshot.size,
-            }));
-          }
-        );
-
-        return unsubscribeComments;
+        // Get comment count including replies
+        const totalComments = await commentCount(postData.id);
+        commentCountsData[postData.id] = totalComments;
+        setCommentCounts(commentCountsData);
       });
 
       Promise.all(promises).then(() => {

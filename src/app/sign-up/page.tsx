@@ -6,7 +6,7 @@ import { FaEye, FaEyeSlash } from "react-icons/fa";
 import Link from "next/link";
 import { doc, setDoc, serverTimestamp } from "@firebase/firestore";
 import { getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
-import router from "next/router";
+import {useRouter} from "next/navigation";
 
 const SignUp = () => {
   const [step, setStep] = useState<number>(1);
@@ -105,6 +105,8 @@ const SignUp = () => {
         setCoverPhotoFile(null); // Reset cover photo file
         setCoverPhotoPreview(null); // Reset cover photo preview
         setDescription("");
+
+        const router = useRouter();
         router.push("/");
       } else {
         setError("Sign-up failed. Please try again.");
