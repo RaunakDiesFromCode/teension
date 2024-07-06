@@ -8,7 +8,6 @@ import {
 } from "@firebase/firestore";
 import { where } from "firebase/firestore";
 import { db } from "../../firebase/config";
-import { ca } from "date-fns/locale";
 import {
   differenceInDays,
   endOfMonth,
@@ -97,6 +96,7 @@ function getChallengeName(id: number) {
 export async function checkId(id: number, email: string): Promise<boolean> {
   console.log("checkId", id, email);
   switch (id) {
+
     case 1:
       const postsRef = collection(db, "users", email, "posts");
       const snapshot = await getDocs(postsRef);
@@ -106,7 +106,7 @@ export async function checkId(id: number, email: string): Promise<boolean> {
           "Finished challenge: " + getChallengeName(id),
           "",
           Date.now(),
-          email
+          email,
         );
         return !snapshot.empty;
       }
@@ -125,7 +125,7 @@ export async function checkId(id: number, email: string): Promise<boolean> {
             "Finished challenge: " + getChallengeName(id),
             "",
             Date.now(),
-            email
+            email,
           );
           return pfpExists && cvrExists;
         } else {
@@ -136,6 +136,15 @@ export async function checkId(id: number, email: string): Promise<boolean> {
     case 3:
       const fllwingRef = collection(db, "users", email, "following");
       const fllwingsnapshot = await getDocs(fllwingRef);
+      if (fllwingsnapshot.size >= 10) {
+        createNotification(
+          "challenge",
+          "Finished challenge: " + getChallengeName(id),
+          "",
+          Date.now(),
+          email,
+        );
+      }
       return !fllwingsnapshot.empty;
 
     case 4:
@@ -150,7 +159,7 @@ export async function checkId(id: number, email: string): Promise<boolean> {
             "Finished challenge: " + getChallengeName(id),
             "",
             Date.now(),
-            email
+            email,
           );
           return likesexists;
         } else {
@@ -170,7 +179,7 @@ export async function checkId(id: number, email: string): Promise<boolean> {
             "Finished challenge: " + getChallengeName(id),
             "",
             Date.now(),
-            email
+            email,
           );
           return dateexists;
         } else {
@@ -190,7 +199,7 @@ export async function checkId(id: number, email: string): Promise<boolean> {
             "Finished challenge: " + getChallengeName(id),
             "",
             Date.now(),
-            email
+            email,
           );
           return commentsexists;
         } else {
@@ -210,7 +219,7 @@ export async function checkId(id: number, email: string): Promise<boolean> {
             "Finished challenge: " + getChallengeName(id),
             "",
             Date.now(),
-            email
+            email,
           );
           return currentShareCount;
         } else {
@@ -240,7 +249,7 @@ export async function checkId(id: number, email: string): Promise<boolean> {
           "Finished challenge: " + getChallengeName(id),
           "",
           Date.now(),
-          email
+          email,
         );
       }
       return uniquePostsCount >= 3;
@@ -257,7 +266,7 @@ export async function checkId(id: number, email: string): Promise<boolean> {
             "Finished challenge: " + getChallengeName(id),
             "",
             Date.now(),
-            email
+            email,
           );
         }
         return tribeExists;
@@ -274,7 +283,7 @@ export async function checkId(id: number, email: string): Promise<boolean> {
           "Finished challenge: " + getChallengeName(id),
           "",
           Date.now(),
-          email
+          email,
         );
       }
       return !(fllwrssnapshot.size < 50);
@@ -294,7 +303,7 @@ export async function checkId(id: number, email: string): Promise<boolean> {
             "Finished challenge: " + getChallengeName(id),
             "",
             Date.now(),
-            email
+            email,
           );
           return true;
         }
@@ -314,7 +323,7 @@ export async function checkId(id: number, email: string): Promise<boolean> {
             "Finished challenge: " + getChallengeName(id),
             "",
             Date.now(),
-            email
+            email,
           );
         }
         return likesGiven;
@@ -335,7 +344,7 @@ export async function checkId(id: number, email: string): Promise<boolean> {
             "Finished challenge: " + getChallengeName(id),
             "",
             Date.now(),
-            email
+            email,
           );
         }
         return likesGiven;
@@ -372,7 +381,7 @@ export async function checkId(id: number, email: string): Promise<boolean> {
           "Finished challenge: " + getChallengeName(id),
           "",
           Date.now(),
-          email
+          email,
         );
       }
       return daysWithPostsCount >= 30;
@@ -390,7 +399,7 @@ export async function checkId(id: number, email: string): Promise<boolean> {
             "Finished challenge: " + getChallengeName(id),
             "",
             Date.now(),
-            email
+            email,
           );
         }
         return likesGiven;

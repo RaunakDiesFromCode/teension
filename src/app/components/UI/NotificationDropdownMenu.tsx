@@ -12,6 +12,9 @@ import { db } from "@/app/firebase/config";
 import { formatDistanceToNow } from "date-fns";
 import useAuth from "@/app/firebase/useAuth";
 import Link from "next/link";
+import { useSound } from "use-sound";
+import { toast } from "react-toastify";
+import { shortenNumber } from "../utility/shortenNumber";
 
 const NotificationDropdownMenu = () => {
   const { currentUser } = useAuth(); // Custom hook to get current user info
@@ -29,6 +32,7 @@ const NotificationDropdownMenu = () => {
   >([]);
   const [loading, setLoading] = useState(true);
   const [newNotificationCount, setNewNotificationCount] = useState(0);
+  const [play] = useSound("/sounds/notification.wav", { volume: 0.25 });
 
   const toggleDropdown = () => {
     setIsVisible(!isVisible);
@@ -43,6 +47,8 @@ const NotificationDropdownMenu = () => {
         db,
         `/users/${currentUser.email}/notification`
       );
+
+      let notificationTxt = "";
 
       const notificationsQuery = query(notificationsCollection);
       const unsubscribe = onSnapshot(notificationsQuery, (snapshot) => {
@@ -68,6 +74,13 @@ const NotificationDropdownMenu = () => {
         setNotifications(unreadNotifications);
         setLoading(false);
         setNewNotificationCount(unreadNotifications.length);
+        if (unreadNotifications.length > 0) {
+          notificationTxt = notificationsData[0].name;
+          console.log("New notification(s) arrived");
+          console.log("Playing notification sound");
+          play();
+          toast.info(notificationTxt);
+        }
       });
 
       return () => unsubscribe(); // Cleanup the listener on component unmount
@@ -113,6 +126,8 @@ const NotificationDropdownMenu = () => {
       return `/post/${postId}`;
     } else if (notificationField === "challenge") {
       return `/challenges`;
+    } else if (notificationField === "tribe") {
+      return `/tribe`;
     } else {
       return "";
     }
@@ -123,14 +138,14 @@ const NotificationDropdownMenu = () => {
       <button onClick={toggleDropdown} className="relative">
         <RiNotification3Line size={25} />
         {newNotificationCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full h-4 w-4 text-center text-xs">
-            {newNotificationCount}
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full  text-center text-xs p-0.5">
+            <div>{shortenNumber(newNotificationCount)}</div>
           </span>
         )}
       </button>
 
       {isVisible && (
-        <div className="dropdown-content bg-gray-700 rounded shadow-md mt-9 w-96 -mr-28 absolute h-[40rem] overflow-scroll">
+        <div className="dropdown-content bg-gray-700 rounded-2xl shadow-md mt-9 w-96 -mr-28 absolute h-[40rem] overflow-scroll">
           {loading ? (
             <p className="text-white text-center py-4">Loading...</p>
           ) : notifications.length === 0 ? (

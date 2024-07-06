@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import useAuth from "@/app/firebase/useAuth"; // Replace with your actual Firebase Auth hook
-import addPost from "@/app/firebase/addPost";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import addPost from "./utility/addPost";
 
 interface PostFormProps {
   onPostAdded: () => void;

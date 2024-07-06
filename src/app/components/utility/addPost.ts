@@ -1,3 +1,4 @@
+import { db } from "@/app/firebase/config";
 import {
   addDoc,
   collection,
@@ -5,7 +6,6 @@ import {
   setDoc,
   Timestamp,
 } from "@firebase/firestore";
-import { db } from "./config";
 
 const addPost = async (
   text: string,

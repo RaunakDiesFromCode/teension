@@ -40,20 +40,11 @@ const Left = () => {
           </li>
           <li className="py-1 transition-all duration-100 hover:bg-slate-700 rounded-md hover:text-white">
             <Link
-              href={"/"}
+              href={"/tribe"}
               className=" flex flex-row items-center gap-2 px-2 text-[17px]"
             >
               <FaHatCowboySide color="greenyellow" size={"25px"} />
               Tribe
-            </Link>
-          </li>
-          <li className="py-1 transition-all duration-100 hover:bg-slate-700 rounded-md hover:text-white">
-            <Link
-              href={"/"}
-              className=" flex flex-row items-center gap-2 px-2 text-[17px]"
-            >
-              <PiSmileyMeltingBold color="lightsalmon" size={"25px"} />
-              Vibe Zone
             </Link>
           </li>
           <li className="py-1 transition-all duration-100 hover:bg-slate-700 rounded-md hover:text-white">

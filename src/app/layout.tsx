@@ -4,6 +4,8 @@ import "./globals.css";
 import Navbar from "./components/navbar";
 import Left from "./components/left";
 import Right from "./components/right";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -23,6 +25,18 @@ export default function RootLayout({
     // </html>
     <html lang="en" className="text-white" suppressHydrationWarning>
       <body className={inter.className}>
+        <ToastContainer
+          position="top-right"
+          autoClose={5000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="dark"
+        />
         <div className="flex flex-col">
           <div className="fixed top-0 left-0 right-0 z-50">
             <Navbar />
