@@ -28,6 +28,7 @@ const SignUp = () => {
   const [coverPhotoPreview, setCoverPhotoPreview] = useState<string | null>(
     null
   );
+  const router = useRouter();
 
   const handleProfilePictureChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -106,7 +107,6 @@ const SignUp = () => {
         setCoverPhotoPreview(null); // Reset cover photo preview
         setDescription("");
 
-        const router = useRouter();
         router.push("/");
       } else {
         setError("Sign-up failed. Please try again.");
