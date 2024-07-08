@@ -1,386 +1,289 @@
 "use client";
-import React, { useEffect, useState } from "react";
-import { db } from "@/app/firebase/config";
-import {
-  doc,
-  getDoc,
-  collection,
-  query,
-  where,
-  getDocs,
-  setDoc,
-  deleteDoc,
-  updateDoc,
-  onSnapshot,
-} from "@firebase/firestore";
-import { formatDistanceToNow } from "date-fns";
-import {
-  FaFire,
-  FaStar,
-  FaHeart,
-  FaRegHeart,
-  FaRegShareSquare,
-  FaRegStar,
-} from "react-icons/fa";
-import { TbCrown } from "react-icons/tb";
-import useAuth from "@/app/firebase/useAuth";
-import SkeletonLoader from "@/app/components/UI/skeletonloader";
+import { useState, ChangeEvent } from "react";
+import { useCreateUserWithEmailAndPassword } from "react-firebase-hooks/auth";
+import { auth, db, storage } from "@/app/firebase/config";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 import Link from "next/link";
-import Image from "next/image";
-import { BiComment } from "react-icons/bi";
-import ShareScreen from "@/app/components/UI/sharescreen";
-import Username from "@/app/components/UI/username";
-import { fetchUserName } from "@/app/components/utility/fetchUserName";
-import { createNotification } from "@/app/components/utility/createNotification";
-import { commentCount } from "@/app/components/utility/commentCount";
+import { doc, setDoc, serverTimestamp } from "@firebase/firestore";
+import { getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
+import { useRouter } from "next/navigation";
 
-interface Profile {
-  name: string;
-  email: string;
-  description: string;
-  profilePicture: string;
-  coverPhoto: string;
-  createdAt: { seconds: number; nanoseconds: number };
-  tribe: string;
-  stars: number;
-  fire: boolean;
-  OP: boolean;
-}
+const SignUp = () => {
+  const [step, setStep] = useState<number>(1);
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const [name, setName] = useState<string>("");
+  const [description, setDescription] = useState<string>("");
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [error, setError] = useState<string>("");
+  const [createUserWithEmailAndPassword, user, loading, signUpError] =
+    useCreateUserWithEmailAndPassword(auth);
+  const [profilePictureFile, setProfilePictureFile] = useState<File | null>(
+    null
+  );
+  const [profilePicturePreview, setProfilePicturePreview] = useState<
+    string | null
+  >(null);
+  const [coverPhotoFile, setCoverPhotoFile] = useState<File | null>(null);
+  const [coverPhotoPreview, setCoverPhotoPreview] = useState<string | null>(
+    null
+  );
 
-interface Post {
-  id: string;
-  genre: string;
-  image: string;
-  username: string;
-  text: string;
-  votes: number;
-  description: string;
-  createdAt: { seconds: number; nanoseconds: number };
-}
+  const router = useRouter();
 
-export default function ProfilePage({ email }: { email: string }) {
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [posts, setPosts] = useState<Post[]>([]);
-  const { currentUser, loading: authLoading } = useAuth();
-  const [commentCounts, setCommentCounts] = useState<{
-    [postId: string]: number;
-  }>({});
-  const [userLikes, setUserLikes] = useState<{ [postId: string]: boolean }>({});
-  const [showShareScreen, setShowShareScreen] = useState(false);
-  const [postIdForShare, setPostIdForShare] = useState<string | null>(null); // State to track postId for sharing
+  const handleProfilePictureChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfilePictureFile(file);
+        setProfilePicturePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
-  useEffect(() => {
-    const fetchProfileAndPosts = async () => {
-      try {
-        if (email) {
-          // Fetch profile data
-          const profileDoc = doc(db, "users", email);
-          const docSnap = await getDoc(profileDoc);
-          if (docSnap.exists()) {
-            const profileData = docSnap.data() as Profile;
-            setProfile(profileData);
+  const handleCoverPhotoChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setCoverPhotoFile(file);
+        setCoverPhotoPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
-            // Fetch post IDs from user's sub-collection
-            const userPostsCollection = collection(db, "users", email, "posts");
-            const userPostsSnapshot = await getDocs(userPostsCollection);
-            const postIds = userPostsSnapshot.docs.map((doc) => doc.id);
-            const commentCountsData: { [postId: string]: number } = {};
+  const handleSignUp = async () => {
+    setError(""); // Clear previous error
+    try {
+      const res = await createUserWithEmailAndPassword(email, password);
+      if (res?.user) {
+        console.log({ res });
+        sessionStorage.setItem("user", "true");
 
-            // Fetch posts data from 'posts' collection
-            const postsData: Post[] = [];
-            const userLikesData: { [postId: string]: boolean } = {};
+        const storage = getStorage();
+        let profilePictureURL = "";
+        let coverPhotoURL = "";
 
-            const promises = postIds.map(async (postId) => {
-              const postDoc = doc(db, "posts", postId);
-              const postSnap = await getDoc(postDoc);
-              if (postSnap.exists()) {
-                const postData = {
-                  id: postSnap.id,
-                  ...postSnap.data(),
-                } as Post;
-                postsData.push(postData);
-
-                if (currentUser) {
-                  const likesQuery = query(
-                    collection(db, "posts", postData.id, "likes"),
-                    where("email", "==", currentUser.email)
-                  );
-
-                  const likesSnapshot = await getDocs(likesQuery);
-                  userLikesData[postData.id] = !likesSnapshot.empty;
-                }
-
-                const totalComments = await commentCount(postData.id);
-                commentCountsData[postData.id] = totalComments;
-                setCommentCounts(commentCountsData);
-              }
-            });
-
-            Promise.all(promises).then(() => {
-              setUserLikes(userLikesData);
-              setPosts(postsData);
-              setLoading(false);
-            });
-          } else {
-            setError("Profile not found");
-          }
+        // Upload profile picture if present
+        if (profilePictureFile) {
+          const profileStorageRef = ref(
+            storage,
+            `images/${profilePictureFile.name}`
+          );
+          await uploadBytes(profileStorageRef, profilePictureFile);
+          profilePictureURL = await getDownloadURL(profileStorageRef);
         }
-      } catch (error) {
-        console.error("Error fetching document:", error);
-        setError("Error fetching document");
-      } finally {
-        setLoading(false);
+
+        // Upload cover photo if present
+        if (coverPhotoFile) {
+          const coverStorageRef = ref(storage, `images/${coverPhotoFile.name}`);
+          await uploadBytes(coverStorageRef, coverPhotoFile);
+          coverPhotoURL = await getDownloadURL(coverStorageRef);
+        }
+
+        // Add user information to Firestore, including cover photo URL if available
+        await setDoc(doc(db, "users", email), {
+          email,
+          name,
+          profilePicture: profilePictureURL,
+          coverPhoto: coverPhotoURL, // Include cover photo URL
+          description,
+          createdAt: serverTimestamp(), // Add createdAt timestamp
+          stars: 1, // Add stars field
+          tribe: "rookie", // Add tribe field
+          fire: false, // Add fire field
+          OP: false, // Add OP field
+        });
+
+        // Reset form fields
+        setEmail("");
+        setPassword("");
+        setName("");
+        setProfilePictureFile(null);
+        setProfilePicturePreview(null);
+        setCoverPhotoFile(null); // Reset cover photo file
+        setCoverPhotoPreview(null); // Reset cover photo preview
+        setDescription("");
+
+        router.push("/");
+      } else {
+        setError("Sign-up failed. Please try again.");
       }
-    };
-
-    fetchProfileAndPosts();
-  }, [email, currentUser]);
-
-  useEffect(() => {
-    console.log("Posts data:", posts);
-  }, [posts]);
-
-  const toggleShareScreen = async (postId: string) => {
-    const shareref = doc(db, "users", email);
-    const sharesnapshot = await getDoc(shareref);
-    if (sharesnapshot.exists()) {
-      const userData = sharesnapshot.data();
-      const currentShareCount = userData.shareCount ?? 0;
-      const updatedShareCount = currentShareCount + 1;
-
-      // Update the user's document with the new comment count
-      await updateDoc(shareref, { shareCount: updatedShareCount });
-    } else {
-      console.log("Error fetching document");
+    } catch (e: any) {
+      if (e.code === "auth/email-already-in-use") {
+        setError("Email already in use. Please sign in instead.");
+      } else {
+        setError(
+          e.message || "An unexpected error occurred. Please try again."
+        );
+      }
+      console.error(e);
     }
-    setShowShareScreen(true);
-    setPostIdForShare(postId);
   };
 
-  const handleLike = async (postId: string) => {
-    if (!currentUser || !currentUser.email) {
-      alert("You need to be logged in to like posts");
-      return;
-    }
-
-    const postIndex = posts.findIndex((post) => post.id === postId);
-    if (postIndex === -1) return;
-
-    let newVoteCount = posts[postIndex].votes;
-
-    if (userLikes[postId]) {
-      newVoteCount -= 1;
-      await deleteDoc(doc(db, "posts", postId, "likes", currentUser.email));
-
-      const likeref = doc(db, "users", currentUser.email);
-      const likesnapshot = await getDoc(likeref);
-      if (likesnapshot.exists()) {
-        const userData = likesnapshot.data();
-        const currentLikes = userData.likes ?? 0; // Initialize to 0 if undefined
-        const updatedLikes = currentLikes - 1;
-        await updateDoc(likeref, { likes: updatedLikes });
-      } else {
-        console.log("Error fetching document");
-      }
-    } else {
-      newVoteCount += 1;
-      await setDoc(doc(db, "posts", postId, "likes", currentUser.email), {
-        email: currentUser.email,
-      });
-
-      const likeref = doc(db, "users", currentUser.email);
-      const likesnapshot = await getDoc(likeref);
-      if (likesnapshot.exists()) {
-        const userData = likesnapshot.data();
-        const currentLikes = userData.likes ?? 0; // Initialize to 0 if undefined
-        const updatedLikes = currentLikes + 1;
-        await updateDoc(likeref, { likes: updatedLikes });
-      } else {
-        console.log("Error fetching document");
-      }
-      const post = posts[postIndex]; // Access the post object
-      // const userName = await fetchUserName(post.username); // Fetch username dynamically
-      const likersName = await fetchUserName(currentUser.email); // Await the result
-      const notificationMessage = `${likersName ?? "Someone"} liked your post`;
-
-      await createNotification(
-        "like",
-        notificationMessage, // Title of the notification
-        postId,
-        Date.now(), // Current time in milliseconds
-        post.username // Dynamic username from post data
-      );
-    }
-
-    await updateDoc(doc(db, "posts", postId), { votes: newVoteCount });
-
-    setUserLikes((prevState) => ({
-      ...prevState,
-      [postId]: !userLikes[postId],
-    }));
-
-    setPosts((prevPosts) => {
-      const newPosts = [...prevPosts];
-      newPosts[postIndex].votes = newVoteCount;
-      return newPosts;
-    });
+  const handleEmailChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setEmail(e.target.value);
+    if (error) setError(""); // Clear error when user starts typing
   };
 
-  const formatTimestamp = (timestamp: {
-    seconds: number;
-    nanoseconds: number;
-  }) => {
-    const date = new Date(timestamp.seconds * 1000);
-    let distance = formatDistanceToNow(date, { addSuffix: false });
+  const handlePasswordChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setPassword(e.target.value);
+    if (error) setError(""); // Clear error when user starts typing
+  };
 
-    // Convert "1 day" to "a day"
-    distance = distance.replace(/^1 day$/, "a day");
+  const toggleShowPassword = () => {
+    setShowPassword(!showPassword);
+  };
 
-    return distance;
+  const renderStepContent = () => {
+    switch (step) {
+      case 1:
+        return (
+          <div>
+            <h1 className="dark:text-white text-black text-2xl mb-5">
+              Sign Up - Step 1
+            </h1>
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={handleEmailChange}
+              className="w-full p-3 mb-4 dark:bg-gray-700 bg-gray-50 rounded outline-none dark:text-white text-black placeholder-gray-500 transition-colors duration-100"
+            />
+            <input
+              type="text"
+              placeholder="Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full p-3 mb-4 dark:bg-gray-700 bg-gray-50 rounded outline-none dark:text-white text-black placeholder-gray-500 transition-colors duration-100"
+            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Password"
+                value={password}
+                onChange={handlePasswordChange}
+                className="w-full p-3 mb-4 dark:bg-gray-700 bg-gray-50 rounded outline-none dark:text-white text-black placeholder-gray-500 transition-colors duration-100"
+              />
+              <button
+                onClick={toggleShowPassword}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500"
+              >
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
+              </button>
+            </div>
+            <button
+              onClick={() => setStep(2)}
+              className="w-full p-3 bg-indigo-600 rounded text-white hover:bg-indigo-500"
+            >
+              Next
+            </button>
+          </div>
+        );
+      case 2:
+        return (
+          <div>
+            <h1 className="dark:text-white text-black text-2xl mb-5 transition-colors duration-100">
+              Sign Up - Step 2
+            </h1>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleProfilePictureChange}
+              className="hidden "
+              id="profilePictureInput"
+            />
+            <label htmlFor="profilePictureInput" className="cursor-pointer">
+              <div className="w-20 h-20 dark:bg-gray-700 bg-gray-50 rounded-full flex items-center justify-center overflow-hidden transition-colors duration-100">
+                {profilePicturePreview ? (
+                  <img
+                    src={profilePicturePreview}
+                    alt="Profile Preview"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="dark:text-white/50 text-black/50 text-2xl transition-colors duration-100">
+                    +
+                  </span>
+                )}
+              </div>
+              <div className="mt-2 text-sm text-gray-400">
+                Choose Profile Picture
+              </div>
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleCoverPhotoChange}
+              className="hidden "
+              id="coverPhotoInput"
+            />
+            <label htmlFor="coverPhotoInput" className="cursor-pointer">
+              <div className="w-full dark:bg-gray-700 bg-gray-50 rounded flex items-center justify-center overflow-hidden h-32 mb-4 transition-colors duration-100">
+                {coverPhotoPreview ? (
+                  <img
+                    src={coverPhotoPreview}
+                    alt="Cover Preview"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="dark:text-white/50 text-black/50 text-2xl transition-colors duration-100">
+                    Add Cover Photo
+                  </span>
+                )}
+              </div>
+            </label>
+            <button
+              onClick={() => setStep(3)}
+              className="w-full p-3 bg-indigo-600 rounded text-white hover:bg-indigo-500 transition-colors duration-100"
+            >
+              Next
+            </button>
+          </div>
+        );
+      case 3:
+        return (
+          <div>
+            <h1 className="dark:text-white text-black text-2xl mb-5">
+              Sign Up - Step 3
+            </h1>
+            <textarea
+              placeholder="Description (optional)"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full p-3 mb-4 dark:bg-gray-700 bg-gray-50 rounded outline-none text-white placeholder-gray-500 transition-colors duration-100"
+            />
+            <button
+              onClick={handleSignUp}
+              className="w-full p-3 bg-indigo-600 rounded text-white hover:bg-indigo-500 transition-colors duration-100"
+              disabled={loading}
+            >
+              Sign Up
+            </button>
+          </div>
+        );
+      default:
+        return null;
+    }
   };
 
   return (
-    <div className=" dark:text-white text-black transition-colors duration-100">
-      {profile && (
-        <>
-          <div className="">
-            <div className="flex items-center">
-              <Image
-                src={profile.coverPhoto}
-                alt=""
-                className="w-full h-64 object-cover rounded-xl"
-                width={100}
-                height={50}
-              />
-            </div>
-            <div className="w-full flex items-center justify-around">
-              <Image
-                src={profile.profilePicture}
-                alt=""
-                className="rounded-full -translate-y-[50%] dark:border-gray-900 border-gray-200 border-8 transition-colors duration-100"
-                width={230}
-                height={230}
-              />
-            </div>
-          </div>
-
-          <div className="-mt-[9%]">
-            <Username
-              username={profile.name}
-              tribe={profile.tribe}
-              OP={profile.OP}
-              fire={profile.fire}
-            />
-
-            <div className="flex flex-row justify-between dark:bg-gray-800 bg-gray-100 rounded-md p-2 transition-colors duration-100">
-              <div className="">
-                {"Member since "}
-                {formatTimestamp(profile.createdAt)}
-              </div>
-              <div className="flex flex-row justify-between items-center gap-1">
-                <div className="flex items-center">
-                  <FaStar color="gold" size={20} />
-                </div>
-                <div className="flex items-center">{profile.stars}</div>
-              </div>
-            </div>
-
-            <div className="dark:bg-gray-800 bg-gray-100 rounded-md p-2 my-4">
-              <div className="dark:text-white/80 text-black/80 text-sm">
-                {profile.email}
-              </div>
-              <hr className="h-px my-1 bg-gray-300 border-0 dark:bg-gray-700" />
-              <div>{profile.description}</div>
-            </div>
-            <div className=" rounded-md  my-4">
-              <h1 className="font-bold text-2xl mb-1 dark:text-white/85 text-black/85">
-                Posts
-              </h1>
-              {posts.map((post) => (
-                <>
-                  <div
-                    key={post.id}
-                    className="dark:bg-gray-800 bg-gray-100 dark:hover:bg-slate-800 hover:bg-slate-100 dark:hover:text-white hover:text-black transition-all duration-100 rounded-lg py-2 mb-4 transition-colors duration-100"
-                  >
-                    <div className="flex flex-row items-center -mb-2 gap-2 px-3 py-1 text-[17px] dark:text-white/75 text-black/75 transition-colors duration-100">
-                      <span className="text-md">
-                        <Link href={"/"} className="hover:text-blue-400">
-                          {post.genre}
-                        </Link>
-                      </span>
-                      {"・"}
-                      <span className="text-xs text-opacity-50 italic">
-                        {formatTimestamp(post.createdAt)} ago
-                      </span>
-                    </div>
-                    <Link href={`/post/${post.id}`} passHref>
-                      <div className="flex flex-col gap-2 px-3 py-1 text-[17px] cursor-pointer">
-                        <span className="text-2xl font-bold">{post.text}</span>
-                        <span className="text-md my-1">{post.description}</span>
-                        {post.image && (
-                          <div className="relative">
-                            <Image
-                              layout="responsive"
-                              width={500}
-                              height={300}
-                              src={post.image}
-                              alt={post.text}
-                              className="w-full rounded-md"
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </Link>
-                    <div className="flex flex-row">
-                      <div className="flex flex-row items-center m-2 gap-2 rounded-full p-3 dark:bg-slate-700 bg-gray-300 transition-colors duration-100">
-                        <button onClick={() => handleLike(post.id)}>
-                          {userLikes[post.id] ? (
-                            <FaHeart
-                              className="dark:text-white text-black"
-                              color="orangered"
-                              size={20}
-                            />
-                          ) : (
-                            <FaRegHeart
-                              className="dark:text-gray-300 text-gray-900"
-                              size={20}
-                            />
-                          )}
-                        </button>
-                        <span className="text-sm">{post.votes}</span>
-                      </div>
-                      <Link href={`/post/${post.id}`} passHref>
-                        <div className="m-2  rounded-full p-3 flex items-center gap-1 cursor-pointer dark:bg-slate-700 bg-gray-300 transition-colors duration-100">
-                          <BiComment size={20} />
-                          <span className="text-sm">
-                            {commentCounts[post.id] || 0}
-                          </span>
-                        </div>
-                      </Link>
-                      <div
-                        className="m-2  rounded-full p-3 flex items-center gap-1 cursor-pointer dark:bg-slate-700 bg-gray-300 transition-colors duration-100"
-                        onClick={() => toggleShareScreen(post.id)}
-                      >
-                        <FaRegShareSquare size={20} />
-                      </div>
-                    </div>
-                  </div>
-                </>
-              ))}
-            </div>
-          </div>
-        </>
-      )}
-      {showShareScreen && postIdForShare && (
-        <ShareScreen
-          onClose={() => setShowShareScreen(false)}
-          Strlink={`localhost:3000/post/${postIdForShare}`}
+    <div className="min-h-full flex items-center justify-center dark:bg-gray-900 bg-gray-200 transition-colors duration-100">
+      <div className="dark:bg-gray-800 bg-gray-100 p-8 rounded shadow-lg w-96 transition-colors duration-100">
+        {error && <div className="text-red-500 text-sm mb-4">{error}</div>}
+        {renderStepContent()}
+        <Link
+          href="/sign-in"
+          className="dark:text-white/50 text-black/50 flex justify-center pt-2 text-sm transition-colors duration-100"
         >
-          {/* Pass any props or children needed by ShareScreen */}
-        </ShareScreen>
-      )}
+          Already have an account? Sign In
+        </Link>
+      </div>
     </div>
   );
-}
+};
+
+export default SignUp;

@@ -1,5 +1,3 @@
-// src/app/tribe/selector.tsx
-
 "use client";
 // src/app/tribe/selector.tsx
 
@@ -295,7 +293,7 @@ const Selector: React.FC<SelectorProps> = ({ onRefresh }) => {
                 key={tribe}
                 className="mb-2 dark:bg-slate-800 bg-slate-100 p-3 rounded flex items-center flex-col transition-colors duration-100"
               >
-                <div className="flex flex-col items-center justify-center h-full mt-10 dark:text-white/80 text-black/80 dark:hover:text-white hover:text-black transition duration-150 transition-colors duration-100">
+                <div className="flex flex-col items-center justify-center h-full mt-10 dark:text-white/80 text-black/80 dark:hover:text-white hover:text-black transition duration-150">
                   <div className="font-bold text-xl flex justify-center items-center gap-1 mt-6 ">
                     {description}
                   </div>
@@ -363,7 +361,7 @@ const Selector: React.FC<SelectorProps> = ({ onRefresh }) => {
           {currentQuestion.options.map((option) => (
             <li>
               <button
-                key={option.value}
+                key={option.label}
                 className="dark:bg-slate-800 bg-slate-100 dark:hover:bg-gray-900 hover:bg-gray-300 transition duration-100 px-4 py-2 rounded-lg mb-2 w-full"
                 onClick={() => handleAnswerClick(option.value)}
               >
