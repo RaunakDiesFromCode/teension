@@ -22,13 +22,15 @@ const ShareScreen: React.FC<ShareScreenProps> = ({ onClose, Strlink }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-gray-900 bg-opacity-50 flex flex-col justify-center items-center">
-      <div className="p-6 m-4 relative bg-slate-800 rounded-lg">
+    <div className="fixed inset-0 z-50 overflow-y-auto dark:bg-gray-900 bg-gray-500 bg-opacity-70 flex flex-col justify-center items-center transition-colors duration-100">
+      <div className="p-6 m-4 relative dark:bg-slate-800 bg-slate-50 rounded-lg shadow-xl transition-colors duration-100">
         <button
           className="absolute top-0 right-0 -mt-9 -mr-9"
           onClick={onClose}
         >
-          <IoClose size={40} />
+          <div className="dark:text-white text-black transition-colors duration-100">
+            <IoClose size={40} />
+          </div>
         </button>
 
         <div className="grid grid-cols-8 gap-2 w-full max-w-[23rem]">
@@ -69,7 +71,7 @@ const ShareScreen: React.FC<ShareScreenProps> = ({ onClose, Strlink }) => {
             )}
           </button>
         </div>
-        <div className="p-6 m-4 relative bg-slate-800 rounded-lg">
+        <div className="p-6 m-4 relative dark:bg-slate-800 bg-slate-100 rounded-lg dark:text-white text-black transition-colors duration-100">
           <Link
             href={`whatsapp://send?text=` + Strlink}
             data-action="share/whatsapp/share"

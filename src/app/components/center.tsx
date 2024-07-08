@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -43,7 +43,6 @@ const Center: React.FC = () => {
     {}
   );
   const { currentUser, loading: authLoading } = useAuth();
-
   const [userLikes, setUserLikes] = useState<{ [postId: string]: boolean }>({});
   const [commentCounts, setCommentCounts] = useState<{
     [postId: string]: number;
@@ -51,11 +50,21 @@ const Center: React.FC = () => {
   const [showShareScreen, setShowShareScreen] = useState(false);
   const [postIdForShare, setPostIdForShare] = useState<string | null>(null); // State to track postId for sharing
 
+  const fetchCommentCounts = useCallback(async (posts: Post[]) => {
+    const commentCountsData: { [postId: string]: number } = {};
+    const promises = posts.map(async (post) => {
+      const totalComments = await commentCount(post.id);
+      commentCountsData[post.id] = totalComments;
+    });
+
+    await Promise.all(promises);
+    setCommentCounts(commentCountsData);
+  }, []);
+
   useEffect(() => {
     const unsubscribePosts = onSnapshot(collection(db, "posts"), (snapshot) => {
       const postsData: Post[] = [];
       const userLikesData: { [postId: string]: boolean } = {};
-      const commentCountsData: { [postId: string]: number } = {};
 
       const promises = snapshot.docs.map(async (doc) => {
         const postData = { id: doc.id, ...doc.data() } as Post;
@@ -70,22 +79,18 @@ const Center: React.FC = () => {
           const likesSnapshot = await getDocs(likesQuery);
           userLikesData[postData.id] = !likesSnapshot.empty;
         }
-
-        // Get comment count including replies
-        const totalComments = await commentCount(postData.id);
-        commentCountsData[postData.id] = totalComments;
-        setCommentCounts(commentCountsData);
       });
 
       Promise.all(promises).then(() => {
         setUserLikes(userLikesData);
         setPosts(postsData);
         setLoading(false);
+        fetchCommentCounts(postsData); // Fetch comment counts separately
       });
     });
 
     return () => unsubscribePosts();
-  }, [currentUser]);
+  }, [currentUser, fetchCommentCounts]);
 
   const handleImageLoaded = (postId: string) => {
     setImageLoaded((prevState) => ({ ...prevState, [postId]: true }));
@@ -134,7 +139,6 @@ const Center: React.FC = () => {
       }
 
       const post = posts[postIndex]; // Access the post object
-      // const userName = await fetchUserName(post.username); // Fetch username dynamically
       const likersName = await fetchUserName(currentUser.email); // Await the result
       const notificationMessage = `${likersName ?? "Someone"} liked your post`;
 
@@ -159,11 +163,6 @@ const Center: React.FC = () => {
       newPosts[postIndex].votes = newVoteCount;
       return newPosts;
     });
-  };
-
-
-  const handleCommentClick = (postId: string) => {
-    // No need to set selectedPost anymore
   };
 
   const toggleShareScreen = async (postId: string) => {
@@ -198,13 +197,13 @@ const Center: React.FC = () => {
       {loading ? (
         <SkeletonLoader />
       ) : (
-        <ul className="text-xl text-white/80">
+        <ul className="text-xl dark:text-white/80 text-black/80 transition-colors duration-200">
           {posts.map((post) => (
             <li
               key={post.id}
-              className="py-1 transition-all duration-100 bg-gray-800 my-3 hover:bg-slate-800 rounded-md hover:text-white flex flex-col"
+              className="py-1 dark:bg-gray-800 bg-gray-100 my-3 dark:hover:bg-slate-800 hover:bg-slate-100 rounded-md dark:hover:text-white hover:text-black flex flex-col transition-colors duration-100"
             >
-              <div className="flex flex-row items-center -mb-2 gap-2 px-3 py-1 text-[17px] text-white/75">
+              <div className="flex flex-row items-center -mb-2 gap-2 px-3 py-1 text-[17px] dark:text-white/75 text-black/75 transition-colors duration-200">
                 <span className="text-md">
                   <Link href={"/"} className="hover:text-blue-400">
                     {post.genre}
@@ -235,18 +234,21 @@ const Center: React.FC = () => {
                 </div>
               </Link>
               <div className="flex flex-row">
-                <div className="flex flex-row items-center m-2 gap-2 rounded-full p-3 bg-slate-700">
+                <div className="flex flex-row items-center m-2 gap-2 rounded-full p-3 dark:bg-slate-700 bg-gray-300 transition-colors duration-100">
                   <button onClick={() => handleLike(post.id)}>
                     {userLikes[post.id] ? (
-                      <FaHeart className="text-white" color="orangered" />
+                      <FaHeart
+                        className="dark:text-white text-black"
+                        color="orangered"
+                      />
                     ) : (
-                      <FaRegHeart className="text-gray-300" />
+                      <FaRegHeart className="dark:text-gray-300 text-gray-900" />
                     )}
                   </button>
                   <span className="text-sm">{post.votes}</span>
                 </div>
                 <Link href={`/post/${post.id}`} passHref>
-                  <div className="m-2 bg-slate-700 rounded-full p-3 flex items-center gap-1 cursor-pointer">
+                  <div className="m-2 dark:bg-slate-700 bg-gray-300 rounded-full p-3 flex items-center gap-1 cursor-pointer transition-colors duration-100">
                     <BiComment />
                     <span className="text-sm">
                       {commentCounts[post.id] || 0}
@@ -254,7 +256,7 @@ const Center: React.FC = () => {
                   </div>
                 </Link>
                 <div
-                  className="m-2 bg-slate-700 rounded-full p-3 flex items-center gap-1 cursor-pointer"
+                  className="m-2 dark:bg-slate-700 bg-gray-300 rounded-full p-3 flex items-center gap-1 cursor-pointer transition-colors duration-100"
                   onClick={() => toggleShareScreen(post.id)}
                 >
                   <FaRegShareSquare />

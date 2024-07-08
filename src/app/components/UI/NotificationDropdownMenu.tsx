@@ -138,18 +138,22 @@ const NotificationDropdownMenu = () => {
       <button onClick={toggleDropdown} className="relative">
         <RiNotification3Line size={25} />
         {newNotificationCount > 0 && (
-          <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full  text-center text-xs p-0.5">
+          <span className="absolute -top-1 -right-1 bg-red-500 w-5 text-white rounded-full  text-center text-xs p-0.5">
             <div>{shortenNumber(newNotificationCount)}</div>
           </span>
         )}
       </button>
 
       {isVisible && (
-        <div className="dropdown-content bg-gray-700 rounded-2xl shadow-md mt-9 w-96 -mr-28 absolute h-[40rem] overflow-scroll">
+        <div className="dropdown-content dark:bg-gray-700 bg-gray-50 rounded-2xl shadow-xl mt-9 w-96 -mr-28 absolute h-[40rem] overflow-scroll z-50 transition-colors duration-100">
           {loading ? (
-            <p className="text-white text-center py-4">Loading...</p>
+            <p className="dark:text-white text-black text-center py-4 transition-colors duration-100">
+              Loading...
+            </p>
           ) : notifications.length === 0 ? (
-            <p className="text-white text-center py-4">No notifications</p>
+            <p className="dark:text-white text-black text-center py-4 transition-colors duration-100">
+              No notifications
+            </p>
           ) : (
             notifications.map((notification) => (
               <Link
@@ -160,7 +164,7 @@ const NotificationDropdownMenu = () => {
                 }}
               >
                 <div
-                  className={`px-4 py-2 text-sm text-white hover:bg-gray-600 w-full ${
+                  className={`px-4 py-2 text-sm dark:text-white text-black dark:hover:bg-gray-600 hover:bg-gray-100 w-full transition-colors duration-100 ${
                     notification.read ? "bg-gray-800 text-white/60" : ""
                   }`}
                 >

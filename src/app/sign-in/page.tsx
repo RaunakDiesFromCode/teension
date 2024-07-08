@@ -49,15 +49,15 @@ const SignIn = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 text-black z-50">
-      <div className="bg-gray-800 p-10 rounded-lg shadow-xl w-96">
-        <h1 className="text-white text-2xl mb-5">Sign In</h1>
+    <div className="min-h-full flex items-center justify-center dark:bg-gray-900 bg-gray-200 z-50 transition-colors duration-100">
+      <div className="dark:bg-gray-800 bg-gray-100 p-10 rounded-lg shadow-xl w-96">
+        <h1 className="dark:text-white text-black text-2xl mb-5">Sign In</h1>
         <input
           type="email"
           placeholder="Email"
           value={email}
           onChange={handleEmailChange}
-          className="w-full p-3 mb-4 bg-gray-700 rounded outline-none text-white placeholder-gray-500"
+          className="w-full p-3 mb-4 dark:bg-gray-700 bg-gray-50 rounded outline-none dark:text-white text-black placeholder-gray-500 transition-colors duration-100"
         />
         <div className="relative">
           <input
@@ -65,7 +65,7 @@ const SignIn = () => {
             placeholder="Password"
             value={password}
             onChange={handlePasswordChange}
-            className="w-full p-3 mb-4 bg-gray-700 rounded outline-none text-white placeholder-gray-500 pr-10"
+            className="w-full p-3 mb-4 dark:bg-gray-700 bg-gray-50 rounded outline-none dark:text-white text-black placeholder-gray-500 pr-10 transition-colors duration-100"
           />
           <button
             onClick={toggleShowPassword}
@@ -77,14 +77,14 @@ const SignIn = () => {
         {error && <p className="text-red-500 mb-4">{error}</p>}
         <button
           onClick={handleSignIn}
-          className="w-full p-3 bg-indigo-600 rounded text-white hover:bg-indigo-500"
+          className="w-full p-3 bg-indigo-600 rounded text-white hover:bg-indigo-500 "
           disabled={loading}
         >
           Sign In
         </button>
         <Link
           href="/sign-up"
-          className="text-white/50 flex justify-center pt-2 text-sm"
+          className="dark:text-white/50 text-black/50 flex justify-center pt-2 text-sm transition-colors duration-100"
         >
           Take me to sign-up Page
         </Link>

@@ -142,20 +142,22 @@ const SignUp = () => {
       case 1:
         return (
           <div>
-            <h1 className="text-white text-2xl mb-5">Sign Up - Step 1</h1>
+            <h1 className="dark:text-white text-black text-2xl mb-5">
+              Sign Up - Step 1
+            </h1>
             <input
               type="email"
               placeholder="Email"
               value={email}
               onChange={handleEmailChange}
-              className="w-full p-3 mb-4 bg-gray-700 rounded outline-none text-white placeholder-gray-500"
+              className="w-full p-3 mb-4 dark:bg-gray-700 bg-gray-50 rounded outline-none dark:text-white text-black placeholder-gray-500 transition-colors duration-100"
             />
             <input
               type="text"
               placeholder="Name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full p-3 mb-4 bg-gray-700 rounded outline-none text-white placeholder-gray-500"
+              className="w-full p-3 mb-4 dark:bg-gray-700 bg-gray-50 rounded outline-none dark:text-white text-black placeholder-gray-500 transition-colors duration-100"
             />
             <div className="relative">
               <input
@@ -163,7 +165,7 @@ const SignUp = () => {
                 placeholder="Password"
                 value={password}
                 onChange={handlePasswordChange}
-                className="w-full p-3 mb-4 bg-gray-700 rounded outline-none text-white placeholder-gray-500 pr-10"
+                className="w-full p-3 mb-4 dark:bg-gray-700 bg-gray-50 rounded outline-none dark:text-white text-black placeholder-gray-500 transition-colors duration-100"
               />
               <button
                 onClick={toggleShowPassword}
@@ -183,16 +185,18 @@ const SignUp = () => {
       case 2:
         return (
           <div>
-            <h1 className="text-white text-2xl mb-5">Sign Up - Step 2</h1>
+            <h1 className="dark:text-white text-black text-2xl mb-5 transition-colors duration-100">
+              Sign Up - Step 2
+            </h1>
             <input
               type="file"
               accept="image/*"
               onChange={handleProfilePictureChange}
-              className="hidden"
+              className="hidden "
               id="profilePictureInput"
             />
             <label htmlFor="profilePictureInput" className="cursor-pointer">
-              <div className="w-20 h-20 bg-gray-700 rounded-full flex items-center justify-center overflow-hidden">
+              <div className="w-20 h-20 dark:bg-gray-700 bg-gray-50 rounded-full flex items-center justify-center overflow-hidden transition-colors duration-100">
                 {profilePicturePreview ? (
                   <img
                     src={profilePicturePreview}
@@ -200,7 +204,9 @@ const SignUp = () => {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <span className="text-white text-2xl">+</span>
+                  <span className="dark:text-white/50 text-black/50 text-2xl transition-colors duration-100">
+                    +
+                  </span>
                 )}
               </div>
               <div className="mt-2 text-sm text-gray-400">
@@ -211,11 +217,11 @@ const SignUp = () => {
               type="file"
               accept="image/*"
               onChange={handleCoverPhotoChange}
-              className="hidden"
+              className="hidden "
               id="coverPhotoInput"
             />
             <label htmlFor="coverPhotoInput" className="cursor-pointer">
-              <div className="w-full bg-gray-700 rounded flex items-center justify-center overflow-hidden h-32 mb-4">
+              <div className="w-full dark:bg-gray-700 bg-gray-50 rounded flex items-center justify-center overflow-hidden h-32 mb-4 transition-colors duration-100">
                 {coverPhotoPreview ? (
                   <img
                     src={coverPhotoPreview}
@@ -223,13 +229,15 @@ const SignUp = () => {
                     className="w-full h-full object-cover"
                   />
                 ) : (
-                  <span className="text-white text-2xl">Add Cover Photo</span>
+                  <span className="dark:text-white/50 text-black/50 text-2xl transition-colors duration-100">
+                    Add Cover Photo
+                  </span>
                 )}
               </div>
             </label>
             <button
               onClick={() => setStep(3)}
-              className="w-full p-3 bg-indigo-600 rounded text-white hover:bg-indigo-500"
+              className="w-full p-3 bg-indigo-600 rounded text-white hover:bg-indigo-500 transition-colors duration-100"
             >
               Next
             </button>
@@ -238,16 +246,18 @@ const SignUp = () => {
       case 3:
         return (
           <div>
-            <h1 className="text-white text-2xl mb-5">Sign Up - Step 3</h1>
+            <h1 className="dark:text-white text-black text-2xl mb-5">
+              Sign Up - Step 3
+            </h1>
             <textarea
               placeholder="Description (optional)"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full p-3 mb-4 bg-gray-700 rounded outline-none text-white placeholder-gray-500"
+              className="w-full p-3 mb-4 dark:bg-gray-700 bg-gray-50 rounded outline-none text-white placeholder-gray-500 transition-colors duration-100"
             />
             <button
               onClick={handleSignUp}
-              className="w-full p-3 bg-indigo-600 rounded text-white hover:bg-indigo-500"
+              className="w-full p-3 bg-indigo-600 rounded text-white hover:bg-indigo-500 transition-colors duration-100"
               disabled={loading}
             >
               Sign Up
@@ -260,13 +270,13 @@ const SignUp = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-800">
-      <div className="bg-gray-900 p-8 rounded shadow-lg w-96">
+    <div className="min-h-full flex items-center justify-center dark:bg-gray-900 bg-gray-200 transition-colors duration-100">
+      <div className="dark:bg-gray-800 bg-gray-100 p-8 rounded shadow-lg w-96 transition-colors duration-100">
         {error && <div className="text-red-500 text-sm mb-4">{error}</div>}
         {renderStepContent()}
         <Link
           href="/sign-in"
-          className="text-white/50 flex justify-center pt-2 text-sm"
+          className="dark:text-white/50 text-black/50 flex justify-center pt-2 text-sm transition-colors duration-100"
         >
           Already have an account? Sign In
         </Link>

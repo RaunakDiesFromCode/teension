@@ -281,7 +281,7 @@ const Selector: React.FC<SelectorProps> = ({ onRefresh }) => {
 
   if (showIntroduction) {
     return (
-      <div className="h-full flex flex-col items-center justify-center">
+      <div className="h-full flex flex-col items-center justify-center dark:text-white text-black transition-colors duration-100">
         <div className="p-8 rounded-lg text-center">
           <h1 className="text-4xl font-bold mb-4">The Tribe Selector...</h1>
           <p className="my-6">
@@ -293,13 +293,13 @@ const Selector: React.FC<SelectorProps> = ({ onRefresh }) => {
             {Object.entries(tribesInfo).map(([tribe, description]) => (
               <li
                 key={tribe}
-                className="mb-2 bg-slate-800 p-3 rounded flex items-center flex-col"
+                className="mb-2 dark:bg-slate-800 bg-slate-100 p-3 rounded flex items-center flex-col transition-colors duration-100"
               >
-                <div className="flex flex-col items-center justify-center h-full mt-10 text-white/80 hover:text-white transition duration-150">
+                <div className="flex flex-col items-center justify-center h-full mt-10 dark:text-white/80 text-black/80 dark:hover:text-white hover:text-black transition duration-150 transition-colors duration-100">
                   <div className="font-bold text-xl flex justify-center items-center gap-1 mt-6 ">
                     {description}
                   </div>
-                  <div className="tribe-text text-[7rem] font-PlayfairDisplay italic text-white/30 -mt-[9rem]">
+                  <div className="tribe-text text-[7rem] font-PlayfairDisplay italic dark:text-white/30 text-black/30 -mt-[9rem] transition-colors duration-100">
                     {tribe}
                   </div>
                 </div>
@@ -310,7 +310,7 @@ const Selector: React.FC<SelectorProps> = ({ onRefresh }) => {
             Answer the following questions to determine your tribe:
           </p>
           <button
-            className="bg-blue-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded"
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
             onClick={startQuestionnaire}
           >
             Start the Questionnaire
@@ -327,7 +327,7 @@ const Selector: React.FC<SelectorProps> = ({ onRefresh }) => {
     }
 
     return (
-      <div className="h-full flex flex-col items-center justify-center">
+      <div className="h-full flex flex-col items-center justify-center dark:text-white text-black transition-colors duration-100">
         <div className=" p-8 rounded-lg text-center mt-[30%]">
           <Username
             username={`Your Tribe: ${finalTribe}`}
@@ -351,18 +351,20 @@ const Selector: React.FC<SelectorProps> = ({ onRefresh }) => {
   const currentQuestion = questions[currentQuestionIndex];
 
   return (
-    <div className="h-full w-full flex flex-col justify-center">
+    <div className="h-full w-full flex flex-col justify-center dark:text-white text-black transition-colors duration-100">
       <div className=" p-8 rounded-lg">
-        <h2 className="text-xl font-semibold text-center text-white/70">
+        <h2 className="text-xl font-semibold text-center dark:text-white/70 text-black/70 transition-colors duration-100">
           Question {currentQuestionIndex + 1}
         </h2>
-        <p className="mb-4 text-4xl font-bold text-center">{currentQuestion.question}</p>
+        <p className="mb-4 text-4xl font-bold text-center">
+          {currentQuestion.question}
+        </p>
         <ul className="">
           {currentQuestion.options.map((option) => (
             <li>
               <button
                 key={option.value}
-                className="bg-slate-800 hover:bg-slate-700 transition duration-100 text-white px-4 py-2 rounded-lg mb-2 w-full"
+                className="dark:bg-slate-800 bg-slate-100 dark:hover:bg-gray-900 hover:bg-gray-300 transition duration-100 px-4 py-2 rounded-lg mb-2 w-full"
                 onClick={() => handleAnswerClick(option.value)}
               >
                 {option.label}

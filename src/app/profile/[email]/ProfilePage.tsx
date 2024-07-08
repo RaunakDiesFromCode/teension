@@ -32,6 +32,7 @@ import ShareScreen from "@/app/components/UI/sharescreen";
 import Username from "@/app/components/UI/username";
 import { fetchUserName } from "@/app/components/utility/fetchUserName";
 import { createNotification } from "@/app/components/utility/createNotification";
+import { commentCount } from "@/app/components/utility/commentCount";
 
 interface Profile {
   name: string;
@@ -85,6 +86,7 @@ export default function ProfilePage({ email }: { email: string }) {
             const userPostsCollection = collection(db, "users", email, "posts");
             const userPostsSnapshot = await getDocs(userPostsCollection);
             const postIds = userPostsSnapshot.docs.map((doc) => doc.id);
+            const commentCountsData: { [postId: string]: number } = {};
 
             // Fetch posts data from 'posts' collection
             const postsData: Post[] = [];
@@ -110,15 +112,9 @@ export default function ProfilePage({ email }: { email: string }) {
                   userLikesData[postData.id] = !likesSnapshot.empty;
                 }
 
-                return onSnapshot(
-                  collection(db, "posts", postData.id, "comments"),
-                  (commentsSnapshot) => {
-                    setCommentCounts((prevCounts) => ({
-                      ...prevCounts,
-                      [postData.id]: commentsSnapshot.size,
-                    }));
-                  }
-                );
+                const totalComments = await commentCount(postData.id);
+                commentCountsData[postData.id] = totalComments;
+                setCommentCounts(commentCountsData);
               }
             });
 
@@ -246,10 +242,10 @@ export default function ProfilePage({ email }: { email: string }) {
   };
 
   return (
-    <>
+    <div className=" dark:text-white text-black transition-colors duration-100">
       {profile && (
         <>
-          <div>
+          <div className="">
             <div className="flex items-center">
               <Image
                 src={profile.coverPhoto}
@@ -263,7 +259,7 @@ export default function ProfilePage({ email }: { email: string }) {
               <Image
                 src={profile.profilePicture}
                 alt=""
-                className="rounded-full -translate-y-[50%] border-gray-900 border-8"
+                className="rounded-full -translate-y-[50%] dark:border-gray-900 border-gray-200 border-8 transition-colors duration-100"
                 width={230}
                 height={230}
               />
@@ -278,7 +274,7 @@ export default function ProfilePage({ email }: { email: string }) {
               fire={profile.fire}
             />
 
-            <div className="flex flex-row justify-between bg-gray-800 rounded-md p-2 ">
+            <div className="flex flex-row justify-between dark:bg-gray-800 bg-gray-100 rounded-md p-2 transition-colors duration-100">
               <div className="">
                 {"Member since "}
                 {formatTimestamp(profile.createdAt)}
@@ -291,20 +287,24 @@ export default function ProfilePage({ email }: { email: string }) {
               </div>
             </div>
 
-            <div className="bg-gray-800 rounded-md p-2 my-4">
-              <div className="text-white/80 text-sm">{profile.email}</div>
-              <hr className="h-px my-1 bg-gray-200 border-0 dark:bg-gray-700" />
+            <div className="dark:bg-gray-800 bg-gray-100 rounded-md p-2 my-4">
+              <div className="dark:text-white/80 text-black/80 text-sm">
+                {profile.email}
+              </div>
+              <hr className="h-px my-1 bg-gray-300 border-0 dark:bg-gray-700" />
               <div>{profile.description}</div>
             </div>
             <div className=" rounded-md  my-4">
-              <h1 className="font-bold text-2xl mb-1">Posts</h1>
+              <h1 className="font-bold text-2xl mb-1 dark:text-white/85 text-black/85">
+                Posts
+              </h1>
               {posts.map((post) => (
                 <>
                   <div
                     key={post.id}
-                    className="bg-gray-800 rounded-lg py-2 mb-4"
+                    className="dark:bg-gray-800 bg-gray-100 dark:hover:bg-slate-800 hover:bg-slate-100 dark:hover:text-white hover:text-black transition-all duration-100 rounded-lg py-2 mb-4 transition-colors duration-100"
                   >
-                    <div className="flex flex-row items-center -mb-2 gap-2 px-3 py-1 text-[17px] text-white/75">
+                    <div className="flex flex-row items-center -mb-2 gap-2 px-3 py-1 text-[17px] dark:text-white/75 text-black/75 transition-colors duration-100">
                       <span className="text-md">
                         <Link href={"/"} className="hover:text-blue-400">
                           {post.genre}
@@ -334,22 +334,25 @@ export default function ProfilePage({ email }: { email: string }) {
                       </div>
                     </Link>
                     <div className="flex flex-row">
-                      <div className="flex flex-row items-center m-2 gap-2 rounded-full p-3 bg-slate-700">
+                      <div className="flex flex-row items-center m-2 gap-2 rounded-full p-3 dark:bg-slate-700 bg-gray-300 transition-colors duration-100">
                         <button onClick={() => handleLike(post.id)}>
                           {userLikes[post.id] ? (
                             <FaHeart
-                              className="text-white"
+                              className="dark:text-white text-black"
                               color="orangered"
                               size={20}
                             />
                           ) : (
-                            <FaRegHeart className="text-gray-300" size={20} />
+                            <FaRegHeart
+                              className="dark:text-gray-300 text-gray-900"
+                              size={20}
+                            />
                           )}
                         </button>
                         <span className="text-sm">{post.votes}</span>
                       </div>
                       <Link href={`/post/${post.id}`} passHref>
-                        <div className="m-2 bg-slate-700 rounded-full p-3 flex items-center gap-1 cursor-pointer">
+                        <div className="m-2  rounded-full p-3 flex items-center gap-1 cursor-pointer dark:bg-slate-700 bg-gray-300 transition-colors duration-100">
                           <BiComment size={20} />
                           <span className="text-sm">
                             {commentCounts[post.id] || 0}
@@ -357,7 +360,7 @@ export default function ProfilePage({ email }: { email: string }) {
                         </div>
                       </Link>
                       <div
-                        className="m-2 bg-slate-700 rounded-full p-3 flex items-center gap-1 cursor-pointer"
+                        className="m-2  rounded-full p-3 flex items-center gap-1 cursor-pointer dark:bg-slate-700 bg-gray-300 transition-colors duration-100"
                         onClick={() => toggleShareScreen(post.id)}
                       >
                         <FaRegShareSquare size={20} />
@@ -378,6 +381,6 @@ export default function ProfilePage({ email }: { email: string }) {
           {/* Pass any props or children needed by ShareScreen */}
         </ShareScreen>
       )}
-    </>
+    </div>
   );
 }

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import useAuth from "@/app/firebase/useAuth"; // Replace with your actual Firebase Auth hook
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import addPost from "./utility/addPost";
+import { IoClose } from "react-icons/io5";
 
 interface PostFormProps {
   onPostAdded: () => void;
@@ -57,16 +58,27 @@ const PostForm: React.FC<PostFormProps> = ({ onPostAdded }) => {
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-4 p-4 bg-gray-800 rounded-lg mx-10 shadow-lg text-white h-auto w-[90vw]"
+      className="space-y-4 p-4 dark:bg-gray-800 bg-gray-200 rounded-lg mx-10 shadow-xl dark:text-white text-black h-auto w-[90vw] transition-colors duration-100"
     >
       <div className="flex flex-col">
-        <label className="mb-2 text-xl">Create a post</label>
+        <label className="mb-2 text-xl text-black/70 dark:text-white/70 flex items-center justify-between transition-colors duration-100">
+          Create a post
+          <button
+            type="button"
+            className=" dark:text-white text-black font-bold py-2 px-4 rounded transition-colors duration-100"
+            onClick={() => {
+              onPostAdded();
+            }}
+          >
+            <IoClose size={25} />
+          </button>
+        </label>
         <input
           type="text"
           value={text}
           onChange={(e) => setText(e.target.value)}
           required
-          className="p-2 bg-gray-800 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-2xl text-xl"
+          className="p-2 dark:bg-gray-800 bg-gray-100 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-2xl text-xl transition-colors duration-100"
           placeholder="Enter title"
         />
       </div>
@@ -76,7 +88,7 @@ const PostForm: React.FC<PostFormProps> = ({ onPostAdded }) => {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           required
-          className="p-2 bg-gray-800 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-2xl"
+          className="p-2 dark:bg-gray-800 bg-gray-100 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-2xl transition-colors duration-100"
           placeholder="Enter description"
         />
       </div>
@@ -89,7 +101,7 @@ const PostForm: React.FC<PostFormProps> = ({ onPostAdded }) => {
               setImage(e.target.files[0]);
             }
           }}
-          className="p-2 bg-gray-800 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-2xl"
+          className="p-2 dark:bg-gray-800 bg-gray-100 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-2xl transition-colors duration-100"
         />
       </div>
       <div className="flex flex-col">
@@ -98,7 +110,7 @@ const PostForm: React.FC<PostFormProps> = ({ onPostAdded }) => {
           value={genre}
           onChange={(e) => setGenre(e.target.value)}
           required
-          className="p-2 bg-gray-800 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-2xl"
+          className="p-2 dark:bg-gray-800 bg-gray-100 border border-gray-600 focus:outline-none h-10 focus:ring-2 focus:ring-blue-500 rounded transition-colors duration-100"
         >
           <option value="">Select a genre</option>
           <option value="help">Help</option>
@@ -126,15 +138,6 @@ const PostForm: React.FC<PostFormProps> = ({ onPostAdded }) => {
           }}
         >
           Clear
-        </button>
-        <button
-          type="button"
-          className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded"
-          onClick={() => {
-            onPostAdded();
-          }}
-        >
-          Cancel
         </button>
       </div>
     </form>

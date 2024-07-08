@@ -11,7 +11,7 @@ const Page = () => {
   }, []);
 
   return (
-    <div className="flex flex-col items-center justify-center h-full">
+    <div className="flex flex-col items-center justify-center h-full dark:text-white/50 text-black/50 transition-colors duration-100">
       <h1 className="text-4xl font-bold mb-4">You've found an Easter egg!</h1>
       <p className="text-xl mb-4">As a reward, enjoy this confetti!</p>
       {showConfetti && <Confetti />}
@@ -20,7 +20,7 @@ const Page = () => {
           This page is usually hidden, but you found it! 🎉
         </p>
       </div>
-      <p className=" text-white/50 italic">{"(Please dont tell this to anyone)"}</p>
+      <p className=" italic">{"(Please dont tell this to anyone)"}</p>
     </div>
   );
 };

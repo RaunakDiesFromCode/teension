@@ -222,7 +222,7 @@ const Challenges = () => {
 
   if (loading) {
     return (
-      <div className="h-full w-full flex items-center justify-center">
+      <div className="h-full w-full flex items-center justify-center dark:text-white text-black">
         Loading profile...
       </div>
     );
@@ -233,7 +233,7 @@ const Challenges = () => {
   }
 
   return (
-    <div className="flex items-center flex-col w-full h-full gap-20 mt-9 pt-9">
+    <div className="flex items-center flex-col w-full h-full gap-20 mt-9 pt-9 dark:text-white text-black transition-colors duration-100">
       <div className="">
         {profile ? (
           <div className="flex flex-col items-center">
@@ -254,14 +254,14 @@ const Challenges = () => {
           <div>Profile not found</div>
         )}
       </div>
-      <p className="-mt-14 text-white/50 italic">
+      <p className="-mt-14 dark:text-white/50 text-black/50 italic transition-colors duration-100">
         Complete challenges to earn stars
       </p>
       <div className="grid grid-cols-2 w-full gap-3 -mt-14">
         {topics.map((topic, index) => (
           <div
             key={topic.id}
-            className="relative bg-gray-800 px-3 py-3 h-60 rounded hover:bg-slate-800 transition-all duration-100 justify-between flex flex-col text-white/75 hover:text-white"
+            className="relative dark:bg-gray-800 bg-gray-100 px-3 py-3 h-60 rounded dark:hover:bg-slate-800 hover:bg-slate-100 transition-all duration-100 justify-between flex flex-col dark:text-white/75 text-black/75 dark:hover:text-white hover:text-black transition-colors duration-100"
           >
             <div>
               <div className="flex font-bold text-2xl items-center gap-1">
@@ -282,7 +282,7 @@ const Challenges = () => {
               {/* // Adjusted button rendering logic with loading state */}
               {isLoading ? (
                 <button
-                  className="mt-4 bg-gray-400 text-white py-1 px-3 rounded-lg flex items-center gap-1"
+                  className="mt-4 bg-gray-400 text-white py-1 px-3 rounded-lg flex items-center gap-1 transition-colors duration-100"
                   disabled
                 >
                   <Spinner />
@@ -290,7 +290,7 @@ const Challenges = () => {
                 </button>
               ) : completedChallenges.includes(topic.id) ? (
                 <button
-                  className="mt-4 bg-gray-500 text-white py-1 px-3 rounded-lg flex items-center gap-1"
+                  className="mt-4 bg-gray-500 text-white py-1 px-3 rounded-lg flex items-center gap-1 transition-colors duration-100"
                   disabled
                 >
                   Completed Challenge
@@ -304,7 +304,7 @@ const Challenges = () => {
                       setIsLoading(false)
                     ); // Reset loading state after completion
                   }}
-                  className="mt-4 bg-blue-400/50 text-white py-1 px-3 rounded-lg flex items-center gap-1"
+                  className="mt-4 bg-blue-400 hover:bg-blue-500 transition duration-100 text-white py-1 px-3 rounded-lg flex items-center gap-1"
                 >
                   Complete Challenge
                   <FaArrowRight />
@@ -317,7 +317,7 @@ const Challenges = () => {
             </div>
           </div>
         ))}
-        <div className="relative bg-gray-800 px-3 py-3 h-60 rounded hover:bg-slate-800 transition-all duration-100 text-white/75 hover:text-white ">
+        <div className="relative dark:bg-gray-800 bg-gray-100 px-3 py-3 h-60 rounded dark:hover:bg-slate-800 hover:bg-slate-100 transition-all duration-100 justify-between flex flex-col dark:text-white/75 text-black/75 dark:hover:text-white hover:text-black">
           <div className="h-full flex items-center flex-col justify-center">
             <div className="flex font-bold text-2xl items-center gap-1 ">
               {"More Comming Soon"}

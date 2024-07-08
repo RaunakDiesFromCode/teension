@@ -1,5 +1,5 @@
-"use client";
 // src/components/PostDetailPage.tsx
+"use client";
 import { useEffect, useState } from "react";
 import {
   doc,
@@ -26,6 +26,7 @@ import { IoChevronBack } from "react-icons/io5";
 import ShareScreen from "@/app/components/UI/sharescreen";
 import { createNotification } from "@/app/components/utility/createNotification";
 import Username from "@/app/components/UI/username";
+import { FiSend } from "react-icons/fi";
 
 interface Post {
   likes: number;
@@ -176,7 +177,6 @@ export default function PostDetailPage({ postId }: { postId: string }) {
       fetchPost();
     }
   }, [postId, db]);
-
 
   const handleCommentSubmit = async () => {
     if (comment.trim() === "" || !userEmail) return;
@@ -345,14 +345,21 @@ export default function PostDetailPage({ postId }: { postId: string }) {
       // Clear the reply input field after successfully adding reply
       setReplyInput((prev) => ({ ...prev, [parentCommentId]: "" }));
 
-      // Other logic for notifications, etc.
+      // Create a notification for the parent comment owner
+      const notificationMessage = `${newReply.username} replied to your comment`;
+      const parentComment = comments.find((c) => c.id === parentCommentId);
+      const parentCommentEmail = parentComment?.email;
+      await createNotification(
+        "reply",
+        notificationMessage,
+        postId,
+        Date.now(),
+        parentCommentEmail || ""
+      );
     } catch (error) {
       console.error("Error adding reply:", error);
     }
   };
-
-
-
 
   const handleInputChange = (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -512,10 +519,9 @@ export default function PostDetailPage({ postId }: { postId: string }) {
     }
   };
 
-
   return (
-    <div className="min-h-screen bg-gray-900 py-1.5 text-white">
-      <div className="max-w-3xl mx-auto bg-gray-800 p-6 rounded-lg shadow-lg">
+    <div className="min-h-screen py-1.5 dark:text-white text-black transition-colors duration-100">
+      <div className="max-w-3xl mx-auto dark:bg-gray-800 bg-gray-100 p-6 rounded-lg shadow-lg transition-colors duration-100">
         <Link
           href="/"
           passHref
@@ -535,7 +541,7 @@ export default function PostDetailPage({ postId }: { postId: string }) {
             {formatTimestamp(post.createdAt)}
           </span>
         </div>
-        <p className="mb-2 -mt-2 text-xs text-white/75">
+        <p className="mb-2 -mt-2 text-xs dark:text-white/75 text-black/75 transition-colors duration-100">
           {"Posted by "}
           <Link href={`/profile/${email}`} className="hover:text-blue-400 ">
             {post.username}
@@ -550,7 +556,7 @@ export default function PostDetailPage({ postId }: { postId: string }) {
           />
         )}
         <div className="flex items-center space-x-4 mb-4 ">
-          <div className="rounded-full p-3 bg-slate-700 flex flex-row gap-2 items-center">
+          <div className="rounded-full p-3 dark:bg-slate-700 bg-gray-300 flex flex-row gap-2 items-center transition-colors duration-100">
             <button onClick={handlePostLike}>
               {postLiked ? (
                 <FaHeart size={24} color="orangered" />
@@ -561,25 +567,25 @@ export default function PostDetailPage({ postId }: { postId: string }) {
             <span>{voteCount}</span>
           </div>
           <div
-            className="m-2 bg-slate-700 rounded-full p-3 flex items-center gap-1 cursor-pointer"
+            className="m-2 dark:bg-slate-700 bg-gray-300 rounded-full p-3 flex items-center gap-1 cursor-pointer transition-colors duration-100"
             onClick={() => toggleShareScreen(postId)}
           >
             <FaRegShareSquare size={24} />
           </div>
         </div>
-        <div className="mb-6">
+        <div className="mb-6 flex bg-gray-200 dark:bg-gray-700 rounded-full pl-5 pr-1 py-1 transition-colors duration-100">
           <input
             type="text"
             value={comment}
             onChange={(e) => setComment(e.target.value)}
             placeholder="Add a comment"
-            className="w-full p-2 mb-2 border-b-2 border-gray-300 focus:border-blue-500 focus:outline-none bg-transparent text-white"
+            className="w-full p-2 mb-2 border-b-2 dark:border-gray-300 border-gray-400 focus:border-blue-500 focus:outline-none bg-transparent"
           />
           <button
             onClick={handleCommentSubmit}
-            className="w-full bg-blue-500 p-2 rounded-lg"
+            className="dark:hover:bg-white/20 w-14 hover:bg-black/10 p-2 rounded-full flex items-center justify-center "
           >
-            Post
+            <FiSend size={25} />
           </button>
         </div>
         <div className="mt-4">
@@ -588,7 +594,7 @@ export default function PostDetailPage({ postId }: { postId: string }) {
               <div key={c.id} className="m-1 my-4 rounded-lg">
                 <p className="">
                   <strong>{c.username}</strong>{" "}
-                  <em className="text-xs text-white/75">
+                  <em className="text-xs dark:text-white/75 text-black/75 transition-colors duration-100">
                     {formatDistanceToNow(new Date(c.time), { addSuffix: true })}
                   </em>
                 </p>
@@ -616,7 +622,7 @@ export default function PostDetailPage({ postId }: { postId: string }) {
                     <div key={r.id} className="m-1 my-2 rounded-lg">
                       <p className="">
                         <strong>{r.username}</strong>{" "}
-                        <em className="text-xs text-white/75">
+                        <em className="text-xs dark:text-white/75 text-black/75 transition-colors duration-100">
                           {formatDistanceToNow(new Date(r.time), {
                             addSuffix: true,
                           })}
@@ -643,19 +649,21 @@ export default function PostDetailPage({ postId }: { postId: string }) {
                       </button>
                     </div>
                   ))}
-                  <input
-                    type="text"
-                    value={replyInput[c.id] || ""}
-                    onChange={(e) => handleInputChange(e, c.id)}
-                    placeholder="Reply to this comment"
-                    className="w-full p-2 mb-2 border-b-2 border-gray-300 focus:border-blue-500 focus:outline-none bg-transparent text-white"
-                  />
-                  <button
-                    onClick={() => handleReplySubmit(c.id)}
-                    className="w-full bg-blue-500 p-2 rounded-lg"
-                  >
-                    Reply
-                  </button>
+                  <div className="flex">
+                    <input
+                      type="text"
+                      value={replyInput[c.id] || ""}
+                      onChange={(e) => handleInputChange(e, c.id)}
+                      placeholder="Reply to this comment"
+                      className="w-full p-2 mb-2 border-b-2 dark:border-gray-300 border-gray-400 focus:border-blue-500 focus:outline-none bg-transparent transition-colors duration-100"
+                    />
+                    <button
+                      onClick={() => handleReplySubmit(c.id)}
+                      className="dark:hover:bg-white/20 w-14 hover:bg-black/10 p-2 rounded-full flex items-center justify-center transition-colors duration-100"
+                    >
+                      <FiSend size={20} />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

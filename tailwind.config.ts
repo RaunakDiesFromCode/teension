@@ -17,17 +17,23 @@ const config: Config = {
         PlayfairDisplay: ["Playfair Display", "serif"],
       },
       animation: {
-        fade: "fadeIn .5s ease-in-out",
+        "fade-in-rotate": "fade-in-rotate 0.5s ease-in-out forwards",
+        "fade-out-rotate": "fade-out-rotate 0.5s ease-in-out forwards",
       },
-
       keyframes: {
-        fadeIn: {
-          from: { opacity: '0' },
-          to: { opacity: '1' },
+        "fade-in-rotate": {
+          "0%": { opacity: "0", transform: "rotate(-90deg)" },
+          "100%": { opacity: "1", transform: "rotate(0deg)" },
+        },
+        "fade-out-rotate": {
+          "0%": { opacity: "1", transform: "rotate(0deg)" },
+          "100%": { opacity: "0", transform: "rotate(90deg)" },
         },
       },
     },
   },
   plugins: [],
+  darkMode: "class",
 };
+
 export default config;
