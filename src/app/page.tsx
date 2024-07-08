@@ -18,9 +18,6 @@ export default function Home() {
   }, [loading, user, router]);
 
 
-  if (loading) {
-    return <div>Loading...</div>; // or any loading indicator you prefer
-  }
 
   return (
     <div className="flex flex-col">

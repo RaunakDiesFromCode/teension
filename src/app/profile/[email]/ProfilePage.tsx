@@ -274,22 +274,18 @@ export default function ProfilePage({ email }: { email: string }) {
               fire={profile.fire}
             />
 
-            <div className="flex flex-row justify-between dark:bg-gray-800 bg-gray-100 rounded-md p-2 transition-colors duration-100">
-              <div className="">
-                {"Member since "}
-                {formatTimestamp(profile.createdAt)}
-              </div>
-              <div className="flex flex-row justify-between items-center gap-1">
-                <div className="flex items-center">
-                  <FaStar color="gold" size={20} />
+            <div className="dark:bg-gray-800 bg-gray-100 rounded-md p-2 my-4 transition-colors duration-100">
+              <div className="flex flex-row justify-between dark:bg-gray-800 bg-gray-100 rounded-md ">
+                <div className="">
+                  {"Member since "}
+                  {formatTimestamp(profile.createdAt)}
                 </div>
-                <div className="flex items-center">{profile.stars}</div>
-              </div>
-            </div>
-
-            <div className="dark:bg-gray-800 bg-gray-100 rounded-md p-2 my-4">
-              <div className="dark:text-white/80 text-black/80 text-sm">
-                {profile.email}
+                <div className="flex flex-row justify-between items-center gap-1">
+                  <div className="flex items-center">
+                    <FaStar color="gold" size={20} />
+                  </div>
+                  <div className="flex items-center">{profile.stars}</div>
+                </div>
               </div>
               <hr className="h-px my-1 bg-gray-300 border-0 dark:bg-gray-700" />
               <div>{profile.description}</div>

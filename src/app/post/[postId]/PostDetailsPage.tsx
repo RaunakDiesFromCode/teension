@@ -593,7 +593,14 @@ export default function PostDetailPage({ postId }: { postId: string }) {
             {comments.map((c) => (
               <div key={c.id} className="m-1 my-4 rounded-lg">
                 <p className="">
-                  <strong>{c.username}</strong>{" "}
+                  <strong>
+                    <Link
+                      href={`/profile/${c.email}`}
+                      className="hover:text-blue-400 "
+                    >
+                      {c.username}
+                    </Link>
+                  </strong>{" "}
                   <em className="text-xs dark:text-white/75 text-black/75 transition-colors duration-100">
                     {formatDistanceToNow(new Date(c.time), { addSuffix: true })}
                   </em>
@@ -621,7 +628,14 @@ export default function PostDetailPage({ postId }: { postId: string }) {
                   {c.replies?.map((r) => (
                     <div key={r.id} className="m-1 my-2 rounded-lg">
                       <p className="">
-                        <strong>{r.username}</strong>{" "}
+                        <strong>
+                          <Link
+                            href={`/profile/${r.email}`}
+                            className="hover:text-blue-400 "
+                          >
+                            {r.username}
+                          </Link>
+                        </strong>{" "}
                         <em className="text-xs dark:text-white/75 text-black/75 transition-colors duration-100">
                           {formatDistanceToNow(new Date(r.time), {
                             addSuffix: true,
