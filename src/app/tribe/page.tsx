@@ -12,7 +12,7 @@ const Page = () => {
   const [selected, setSelected] = useState<boolean | null>(null);
   const [tribe, setTribe] = useState<string | null>(null);
   const currentUser = getAuth().currentUser;
-  const email = "raunakmanna43@gmail.com";
+  const email = currentUser ? currentUser.email || "" : "";
   const [refreshKey, setRefreshKey] = useState(0);
   // const email = currentUser ? currentUser.email || "" : "";
 

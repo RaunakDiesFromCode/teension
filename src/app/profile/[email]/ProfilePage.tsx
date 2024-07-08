@@ -302,7 +302,7 @@ export default function ProfilePage({ email }: { email: string }) {
                 <>
                   <div
                     key={post.id}
-                    className="dark:bg-gray-800 bg-gray-100 dark:hover:bg-slate-800 hover:bg-slate-100 dark:hover:text-white hover:text-black transition-all duration-100 rounded-lg py-2 mb-4 transition-colors duration-100"
+                    className="dark:bg-gray-800 bg-gray-100 dark:hover:bg-slate-800 hover:bg-slate-100 dark:hover:text-white hover:text-black transition-all duration-100 rounded-lg py-2 mb-4"
                   >
                     <div className="flex flex-row items-center -mb-2 gap-2 px-3 py-1 text-[17px] dark:text-white/75 text-black/75 transition-colors duration-100">
                       <span className="text-md">
