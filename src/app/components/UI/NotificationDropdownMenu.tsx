@@ -12,6 +12,7 @@ import { db } from "@/app/firebase/config";
 import { formatDistanceToNow } from "date-fns";
 import useAuth from "@/app/firebase/useAuth";
 import Link from "next/link";
+// @ts-igmore
 import { useSound } from "use-sound";
 import { toast } from "react-toastify";
 import { shortenNumber } from "../utility/shortenNumber";
