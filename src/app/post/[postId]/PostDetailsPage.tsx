@@ -23,11 +23,11 @@ import { FaHeart, FaRegHeart, FaRegShareSquare } from "react-icons/fa";
 import useAuth from "@/app/firebase/useAuth";
 import { fetchUserName } from "@/app/components/utility/fetchUserName";
 import { IoChevronBack } from "react-icons/io5";
+import { IoIosMore } from "react-icons/io";
 import ShareScreen from "@/app/components/UI/sharescreen";
 import { createNotification } from "@/app/components/utility/createNotification";
-import Username from "@/app/components/UI/username";
 import { FiSend } from "react-icons/fi";
-import { MdDeleteOutline } from "react-icons/md";
+import { MdDeleteOutline, MdOutlineReport } from "react-icons/md";
 import Spinner from "@/app/components/UI/spinner";
 
 interface Post {
@@ -69,6 +69,7 @@ export default function PostDetailPage({ postId }: { postId: string }) {
   const [replyInput, setReplyInput] = useState<{ [key: string]: string }>({});
   const [isPoster, setIsPoster] = useState<boolean>(false);
   const [isPosting, setIsPosting] = useState(false);
+  const [moreOption, setMoreOption] = useState(false);
 
   useEffect(() => {
     if (!authLoading) {
@@ -540,6 +541,28 @@ export default function PostDetailPage({ postId }: { postId: string }) {
     }
   };
 
+  const reportPost = async () => {
+    try {
+      const postRef = doc(db, "posts", postId);
+
+      if (postRef) {
+        const postSnapshot = await getDoc(postRef);
+        if (postSnapshot.exists()) {
+          const reportCounter = postSnapshot.data()?.reportCounter || 0;
+          await updateDoc(postRef, { reportCounter: reportCounter + 1 });
+        } else {
+          console.error("Post does not exist");
+        }
+      }
+    } catch (error) {
+      console.error("Error reporting post:", error);
+    }
+  };
+
+  const moreOptionToggle = () => {
+    setMoreOption(!moreOption);
+  };
+
   return (
     <div className="min-h-screen py-1.5 dark:text-white text-black transition-colors duration-100">
       <div className="max-w-3xl mx-auto dark:bg-gray-800 bg-gray-100 p-6 rounded-lg shadow-lg transition-colors duration-100">
@@ -552,15 +575,36 @@ export default function PostDetailPage({ postId }: { postId: string }) {
             <IoChevronBack size={20} />
             Back to All Posts
           </Link>
-          {isPoster && (
-            <button className=" rounded-full p-1" onClick={delPost}>
-              <MdDeleteOutline
+          <div>
+            <button className=" rounded-full p-1" onClick={moreOptionToggle}>
+              <IoIosMore
                 size={25}
-                color="orangered"
-                className=" opacity-50 hover:opacity-100 transition duration-100"
+                className=" opacity-70 hover:opacity-100 transition duration-100"
               />
             </button>
-          )}
+            {moreOption && (
+              <>
+                <div className="absolute -translate-x-[6rem] bg-white dark:bg-gray-700 rounded-lg shadow-lg p-2">
+                  {isPoster && (
+                    <button
+                      className=" rounded-full p-1 flex items-center gap-1 opacity-70 hover:opacity-100 transition duration-100"
+                      onClick={delPost}
+                    >
+                      <MdDeleteOutline size={25} color="orangered" />
+                      Delete Post
+                    </button>
+                  )}
+                  <button
+                    className=" rounded-full p-1 flex items-center gap-1 opacity-70 hover:opacity-100 transition duration-100"
+                    onClick={reportPost}
+                  >
+                    <MdOutlineReport size={25} color="orangered" />
+                    Report Post
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
         <div className="flex flex-row items-center -mb-2 gap-2 py-1 text-[17px]">
           <span className="text-md text-opacity-80">
@@ -688,7 +732,7 @@ export default function PostDetailPage({ postId }: { postId: string }) {
                           handleLikeReply(
                             c.id,
                             r.id,
-                            r.likedBy.includes(r.email)
+                            r.likedBy.includes(userEmail as string)
                           )
                         }
                         className="flex items-center mt-1"
