@@ -15,12 +15,10 @@ import {
 } from "@firebase/firestore";
 import { formatDistanceToNow } from "date-fns";
 import {
-  FaFire,
   FaStar,
   FaHeart,
   FaRegHeart,
   FaRegShareSquare,
-  FaRegStar,
 } from "react-icons/fa";
 import { TbCrown } from "react-icons/tb";
 import useAuth from "@/app/firebase/useAuth";
@@ -255,11 +253,11 @@ export default function ProfilePage({ email }: { email: string }) {
                 height={50}
               />
             </div>
-            <div className="w-full flex items-center justify-around">
+            <div className="flex items-center justify-around w-full mb-4">
               <Image
                 src={profile.profilePicture}
                 alt=""
-                className="rounded-full -translate-y-[50%] dark:border-gray-900 border-gray-200 border-8 transition-colors duration-100"
+                className="rounded-full -translate-y-[50%] dark:border-gray-900 border-gray-200 border-8 transition-colors duration-100 h-52 w-52 object-cover"
                 width={230}
                 height={230}
               />

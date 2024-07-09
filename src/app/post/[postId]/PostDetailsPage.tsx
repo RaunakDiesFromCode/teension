@@ -16,7 +16,7 @@ import {
   getDocs,
 } from "firebase/firestore";
 import { db } from "@/app/firebase/config";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, set } from "date-fns";
 import firebase from "firebase/compat/app";
 import Link from "next/link";
 import { FaHeart, FaRegHeart, FaRegShareSquare } from "react-icons/fa";
@@ -27,6 +27,8 @@ import ShareScreen from "@/app/components/UI/sharescreen";
 import { createNotification } from "@/app/components/utility/createNotification";
 import Username from "@/app/components/UI/username";
 import { FiSend } from "react-icons/fi";
+import { MdDeleteOutline } from "react-icons/md";
+import Spinner from "@/app/components/UI/spinner";
 
 interface Post {
   likes: number;
@@ -36,6 +38,7 @@ interface Post {
   username: string;
   email: string;
   genre: string;
+  description: string;
   createdAt: firebase.firestore.Timestamp;
 }
 
@@ -64,6 +67,8 @@ export default function PostDetailPage({ postId }: { postId: string }) {
   const [postIdForShare, setPostIdForShare] = useState<string | null>(null); // State to track postId for sharing
   const [email, setEmail] = useState<string | null>(null);
   const [replyInput, setReplyInput] = useState<{ [key: string]: string }>({});
+  const [isPoster, setIsPoster] = useState<boolean>(false);
+  const [isPosting, setIsPosting] = useState(false);
 
   useEffect(() => {
     if (!authLoading) {
@@ -82,6 +87,9 @@ export default function PostDetailPage({ postId }: { postId: string }) {
             console.log(postData.username);
             setEmail(postData.username); // Update the state instead of a let variable
             postData.email = postData.username; // Update the email property
+            userEmail === postData.email
+              ? setIsPoster(true)
+              : setIsPoster(false);
             const username = await fetchUserName(postData.username);
             setPost({ ...postData, username: username || postData.username });
             setVoteCount(postData.votes);
@@ -179,6 +187,7 @@ export default function PostDetailPage({ postId }: { postId: string }) {
   }, [postId, db]);
 
   const handleCommentSubmit = async () => {
+    setIsPosting(true);
     if (comment.trim() === "" || !userEmail) return;
 
     const timeOfPosting = new Date().toISOString();
@@ -227,6 +236,7 @@ export default function PostDetailPage({ postId }: { postId: string }) {
         } else {
           console.log("Post is null");
         }
+        setIsPosting(false);
       } else {
         console.log("Error fetching user document");
       }
@@ -291,6 +301,7 @@ export default function PostDetailPage({ postId }: { postId: string }) {
   };
 
   const handleReplySubmit = async (parentCommentId: string) => {
+    setIsPosting(true);
     const replyText = replyInput[parentCommentId]?.trim();
     if (!replyText || !userEmail) return;
 
@@ -356,6 +367,7 @@ export default function PostDetailPage({ postId }: { postId: string }) {
         Date.now(),
         parentCommentEmail || ""
       );
+      setIsPosting(false);
     } catch (error) {
       console.error("Error adding reply:", error);
     }
@@ -519,17 +531,37 @@ export default function PostDetailPage({ postId }: { postId: string }) {
     }
   };
 
+  const delPost = async () => {
+    try {
+      await deleteDoc(doc(db, "posts", postId));
+      window.location.href = "/";
+    } catch (error) {
+      console.error("Error deleting document:", error);
+    }
+  };
+
   return (
     <div className="min-h-screen py-1.5 dark:text-white text-black transition-colors duration-100">
       <div className="max-w-3xl mx-auto dark:bg-gray-800 bg-gray-100 p-6 rounded-lg shadow-lg transition-colors duration-100">
-        <Link
-          href="/"
-          passHref
-          className="mb-4 text-blue-500 flex flex-row items-center"
-        >
-          <IoChevronBack size={20} />
-          Back to All Posts
-        </Link>
+        <div className=" flex items-center justify-between">
+          <Link
+            href="/"
+            passHref
+            className="mb-4 text-blue-500 flex flex-row items-center"
+          >
+            <IoChevronBack size={20} />
+            Back to All Posts
+          </Link>
+          {isPoster && (
+            <button className=" rounded-full p-1" onClick={delPost}>
+              <MdDeleteOutline
+                size={25}
+                color="orangered"
+                className=" opacity-50 hover:opacity-100 transition duration-100"
+              />
+            </button>
+          )}
+        </div>
         <div className="flex flex-row items-center -mb-2 gap-2 py-1 text-[17px]">
           <span className="text-md text-opacity-80">
             <Link href={"/"} className="hover:text-blue-400">
@@ -555,6 +587,7 @@ export default function PostDetailPage({ postId }: { postId: string }) {
             className="mb-4 w-full h-auto rounded-lg"
           />
         )}
+        <div className="mb-5">{post.description}</div>
         <div className="flex items-center space-x-4 mb-4 ">
           <div className="rounded-full p-3 dark:bg-slate-700 bg-gray-300 flex flex-row gap-2 items-center transition-colors duration-100">
             <button onClick={handlePostLike}>
@@ -583,9 +616,14 @@ export default function PostDetailPage({ postId }: { postId: string }) {
           />
           <button
             onClick={handleCommentSubmit}
-            className="dark:hover:bg-white/20 w-14 hover:bg-black/10 p-2 rounded-full flex items-center justify-center "
+            className="dark:hover:bg-white/20 w-14 hover:bg-black/10 p-2 rounded-full flex items-center justify-center"
+            disabled={isPosting} // Disable button while posting
           >
-            <FiSend size={25} />
+            {isPosting ? (
+              <Spinner /> // Render spinner when posting
+            ) : (
+              <FiSend size={25} /> // Otherwise, render send icon
+            )}
           </button>
         </div>
         <div className="mt-4">
@@ -602,7 +640,9 @@ export default function PostDetailPage({ postId }: { postId: string }) {
                     </Link>
                   </strong>{" "}
                   <em className="text-xs dark:text-white/75 text-black/75 transition-colors duration-100">
-                    {formatDistanceToNow(new Date(c.time), { addSuffix: true })}
+                    {formatDistanceToNow(new Date(c.time), {
+                      addSuffix: true,
+                    })}
                   </em>
                 </p>
                 <p>{c.text}</p>
@@ -674,8 +714,13 @@ export default function PostDetailPage({ postId }: { postId: string }) {
                     <button
                       onClick={() => handleReplySubmit(c.id)}
                       className="dark:hover:bg-white/20 w-14 hover:bg-black/10 p-2 rounded-full flex items-center justify-center transition-colors duration-100"
+                      disabled={isPosting} // Disable button while posting
                     >
-                      <FiSend size={20} />
+                      {isPosting ? (
+                        <Spinner /> // Render spinner when posting
+                      ) : (
+                        <FiSend size={25} /> // Otherwise, render send icon
+                      )}
                     </button>
                   </div>
                 </div>
