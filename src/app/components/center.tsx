@@ -29,6 +29,7 @@ interface Post {
   id: string;
   image: string;
   username: string;
+  displayName?: string;
   text: string;
   votes: number;
   description: string;
@@ -68,6 +69,8 @@ const Center: React.FC = () => {
 
       const promises = snapshot.docs.map(async (doc) => {
         const postData = { id: doc.id, ...doc.data() } as Post;
+        postData.displayName =
+          (await fetchUserName(postData.username)) || postData.username;
         postsData.push(postData);
 
         if (currentUser) {
@@ -192,27 +195,38 @@ const Center: React.FC = () => {
     return formatDistanceToNow(date, { addSuffix: true });
   };
 
+   if (loading || authLoading) {
+     return <SkeletonLoader />;
+   }
+
   return (
     <div>
-      {loading ? (
-        <SkeletonLoader />
-      ) : (
         <ul className="text-xl dark:text-white/80 text-black/80 transition-colors duration-200">
           {posts.map((post) => (
             <li
               key={post.id}
               className="py-1 dark:bg-gray-800 bg-gray-100 my-3 dark:hover:bg-slate-800 hover:bg-slate-100 rounded-md dark:hover:text-white hover:text-black flex flex-col transition-colors duration-100"
             >
-              <div className="flex flex-row items-center -mb-2 gap-2 px-3 py-1 text-[17px] dark:text-white/75 text-black/75 transition-colors duration-200">
+              <div className="flex flex-row items-center -mb-2 gap-2 px-3 py-1 text-[17px] dark:text-white/75 text-black/75 transition-colors duration-200 justify-between">
                 <span className="text-md">
-                  <Link href={"/"} className="hover:text-blue-400">
-                    {post.genre}
+                  <Link
+                    href={`/profile/${post.username}`}
+                    className="hover:text-blue-400"
+                  >
+                    {post.displayName || post.username}
                   </Link>
                 </span>
-                {"・"}
-                <span className="text-xs text-opacity-50 italic">
-                  {formatTimestamp(post.createdAt)}
-                </span>
+                <div className="flex items-center">
+                  <span className="text-sm">
+                    <Link href={"/"} className="hover:text-blue-400">
+                      {post.genre}
+                    </Link>
+                  </span>
+                  {"・"}
+                  <span className="text-sm text-opacity-50 italic">
+                    {formatTimestamp(post.createdAt)}
+                  </span>
+                </div>
               </div>
               <Link href={`/post/${post.id}`} passHref>
                 <div className="flex flex-col gap-2 px-3 py-1 text-[17px] cursor-pointer">
@@ -265,7 +279,7 @@ const Center: React.FC = () => {
             </li>
           ))}
         </ul>
-      )}
+      
 
       {showShareScreen && postIdForShare && (
         <ShareScreen

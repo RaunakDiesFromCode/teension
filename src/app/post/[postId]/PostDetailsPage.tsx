@@ -583,7 +583,6 @@ export default function PostDetailPage({ postId }: { postId: string }) {
               />
             </button>
             {moreOption && (
-              <>
                 <div className="absolute -translate-x-[6rem] bg-white dark:bg-gray-700 rounded-lg shadow-lg p-2">
                   {isPoster && (
                     <button
@@ -602,7 +601,6 @@ export default function PostDetailPage({ postId }: { postId: string }) {
                     Report Post
                   </button>
                 </div>
-              </>
             )}
           </div>
         </div>

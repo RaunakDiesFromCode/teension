@@ -128,6 +128,8 @@ const NotificationDropdownMenu = () => {
       return `/challenges`;
     } else if (notificationField === "tribe") {
       return `/tribe`;
+    } else if (notificationField === "follow") {
+      return `/profile/${postId}`;
     } else {
       return "";
     }

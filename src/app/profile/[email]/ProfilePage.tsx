@@ -13,16 +13,9 @@ import {
   updateDoc,
   onSnapshot,
 } from "@firebase/firestore";
-import { formatDistanceToNow } from "date-fns";
-import {
-  FaStar,
-  FaHeart,
-  FaRegHeart,
-  FaRegShareSquare,
-} from "react-icons/fa";
-import { TbCrown } from "react-icons/tb";
+import { formatDistanceToNow, set } from "date-fns";
+import { FaStar, FaHeart, FaRegHeart, FaRegShareSquare } from "react-icons/fa";
 import useAuth from "@/app/firebase/useAuth";
-import SkeletonLoader from "@/app/components/UI/skeletonloader";
 import Link from "next/link";
 import Image from "next/image";
 import { BiComment } from "react-icons/bi";
@@ -31,6 +24,9 @@ import Username from "@/app/components/UI/username";
 import { fetchUserName } from "@/app/components/utility/fetchUserName";
 import { createNotification } from "@/app/components/utility/createNotification";
 import { commentCount } from "@/app/components/utility/commentCount";
+import { shortenNumber } from "@/app/components/utility/shortenNumber";
+import { MdOutlinePersonAdd, MdOutlinePersonAddDisabled } from "react-icons/md";
+import Spinner from "@/app/components/UI/spinner";
 
 interface Profile {
   name: string;
@@ -68,12 +64,17 @@ export default function ProfilePage({ email }: { email: string }) {
   const [userLikes, setUserLikes] = useState<{ [postId: string]: boolean }>({});
   const [showShareScreen, setShowShareScreen] = useState(false);
   const [postIdForShare, setPostIdForShare] = useState<string | null>(null); // State to track postId for sharing
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followerCount, setFollowerCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     const fetchProfileAndPosts = async () => {
       try {
         if (email) {
           // Fetch profile data
+          setNotFound(false);
           const profileDoc = doc(db, "users", email);
           const docSnap = await getDoc(profileDoc);
           if (docSnap.exists()) {
@@ -122,8 +123,12 @@ export default function ProfilePage({ email }: { email: string }) {
               setLoading(false);
             });
           } else {
+            setNotFound(true);
             setError("Profile not found");
           }
+        } else {
+          setNotFound(true);
+          setError("Profile not found");
         }
       } catch (error) {
         console.error("Error fetching document:", error);
@@ -239,9 +244,101 @@ export default function ProfilePage({ email }: { email: string }) {
     return distance;
   };
 
+  const followUser = async () => {
+    if (!currentUser || !currentUser.email) {
+      alert("You need to be logged in to follow users");
+      return;
+    }
+
+    if (!isFollowing) {
+      const followersName = await fetchUserName(currentUser.email);
+      const userFollowersRef = doc(
+        db,
+        "users",
+        email,
+        "followers",
+        currentUser.email
+      );
+      const userFollowingRef = doc(
+        db,
+        "users",
+        currentUser.email,
+        "followings",
+        email
+      );
+      await setDoc(userFollowersRef, { email });
+      await setDoc(userFollowingRef, { email });
+      createNotification(
+        "follow",
+        `${followersName} followed you`,
+        currentUser.email,
+        Date.now(),
+        email
+      );
+    } else {
+      const userFollowersRef = doc(
+        db,
+        "users",
+        email,
+        "followers",
+        currentUser.email
+      );
+      const userFollowingRef = doc(
+        db,
+        "users",
+        currentUser.email,
+        "followings",
+        email
+      );
+      await deleteDoc(userFollowersRef);
+      await deleteDoc(userFollowingRef);
+    }
+
+    setIsFollowing((prev) => !prev);
+  };
+
+  useEffect(() => {
+    const followersCollection = collection(db, "users", email, "followers");
+    const followersUnsubscribe = onSnapshot(followersCollection, (snapshot) => {
+      setFollowerCount(snapshot.size);
+    });
+    const followingsCollection = collection(db, "users", email, "followiings");
+    const followingUnsubscribe = onSnapshot(
+      followingsCollection,
+      (snapshot) => {
+        setFollowingCount(snapshot.size);
+      }
+    );
+
+    return () => {
+      followersUnsubscribe();
+      followingUnsubscribe();
+    };
+  }, [email]);
+
+  useEffect(() => {
+    const checkIfFollowing = async () => {
+      if (currentUser && currentUser.email) {
+        const followingDoc = doc(
+          db,
+          "users",
+          currentUser.email,
+          "followers",
+          email
+        );
+        const followingSnapshot = await getDoc(followingDoc);
+        setIsFollowing(followingSnapshot.exists());
+      }
+    };
+
+    checkIfFollowing();
+  }, [currentUser, email]);
+
+  const isUser = currentUser?.email === email;
+
   return (
     <div className=" dark:text-white text-black transition-colors duration-100">
-      {profile && (
+      {profile ? (
         <>
           <div className="">
             <div className="flex items-center">
@@ -273,7 +370,7 @@ export default function ProfilePage({ email }: { email: string }) {
             />
 
             <div className="dark:bg-gray-800 bg-gray-100 rounded-md p-2 my-4 transition-colors duration-100">
-              <div className="flex flex-row justify-between dark:bg-gray-800 bg-gray-100 rounded-md ">
+              <div className="flex flex-row justify-between ">
                 <div className="">
                   {"Member since "}
                   {formatTimestamp(profile.createdAt)}
@@ -285,8 +382,33 @@ export default function ProfilePage({ email }: { email: string }) {
                   <div className="flex items-center">{profile.stars}</div>
                 </div>
               </div>
+
               <hr className="h-px my-1 bg-gray-300 border-0 dark:bg-gray-700" />
-              <div>{profile.description}</div>
+
+              <div className="flex flex-row justify-between items-center w-full">
+                <div className="w-96">{profile.description}</div>
+
+                <div className="flex items-center pl-4">
+                  <div className="dark:bg-slate-800 bg-gray-100 flex gap-1 items-center dark:text-white/75 text-black/75 ">
+                    <div className="flex flex-col">
+                      <div>{shortenNumber(followerCount)} followers</div>
+                      <div>{shortenNumber(followingCount)} following</div>
+                    </div>
+                    {!isUser && (
+                      <button
+                        className="dark:bg-gray-900 bg-gray-50 dark:hover:bg-slate-700 hover:bg-gray-200 hover:font-semibold rounded-md transition-all duration-100 p-2 dark:shadow-gray-400/20"
+                        onClick={followUser}
+                      >
+                        {isFollowing ? (
+                          <MdOutlinePersonAddDisabled size={35} />
+                        ) : (
+                          <MdOutlinePersonAdd size={35} />
+                        )}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
             </div>
             <div className=" rounded-md  my-4">
               <h1 className="font-bold text-2xl mb-1 dark:text-white/85 text-black/85">
@@ -366,6 +488,10 @@ export default function ProfilePage({ email }: { email: string }) {
             </div>
           </div>
         </>
+      ) : (
+        <div className="h-full w-full flex text-center items-center justify-center mt-[25%]">
+          {notFound ? `Profile not found` : <Spinner />}
+        </div>
       )}
       {showShareScreen && postIdForShare && (
         <ShareScreen

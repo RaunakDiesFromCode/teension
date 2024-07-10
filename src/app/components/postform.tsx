@@ -3,6 +3,8 @@ import useAuth from "@/app/firebase/useAuth"; // Replace with your actual Fireba
 import { getStorage, ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import addPost from "./utility/addPost";
 import { IoClose } from "react-icons/io5";
+import Spinner from "./UI/spinner";
+import { FiSend } from "react-icons/fi";
 
 interface PostFormProps {
   onPostAdded: () => void;
@@ -14,7 +16,7 @@ const PostForm: React.FC<PostFormProps> = ({ onPostAdded }) => {
   const [image, setImage] = useState<File | null>(null);
   const [username, setUsername] = useState("");
   const [genre, setGenre] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const { currentUser } = useAuth();
 
   useEffect(() => {
@@ -25,6 +27,7 @@ const PostForm: React.FC<PostFormProps> = ({ onPostAdded }) => {
   }, [currentUser]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    setLoading(true);
     event.preventDefault();
 
     let downloadURL = "";
@@ -49,6 +52,7 @@ const PostForm: React.FC<PostFormProps> = ({ onPostAdded }) => {
     } catch (error) {
       console.error(error);
     }
+    setLoading(false);
   };
 
   // if (loading) {
@@ -123,9 +127,19 @@ const PostForm: React.FC<PostFormProps> = ({ onPostAdded }) => {
       <div className="flex gap-4">
         <button
           type="submit"
-          className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"
+          className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded flex gap-1 items-center"
+          disabled={loading}
         >
-          Add Post
+          {loading ? (
+            <>
+              <Spinner />
+            </>
+          ) : (
+            <>
+              Post
+              <FiSend size={25} />
+            </>
+          )}
         </button>
         <button
           type="button"
