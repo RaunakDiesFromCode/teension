@@ -302,7 +302,7 @@ export default function ProfilePage({ email }: { email: string }) {
     const followersUnsubscribe = onSnapshot(followersCollection, (snapshot) => {
       setFollowerCount(snapshot.size);
     });
-    const followingsCollection = collection(db, "users", email, "followiings");
+    const followingsCollection = collection(db, "users", email, "followings");
     const followingUnsubscribe = onSnapshot(
       followingsCollection,
       (snapshot) => {

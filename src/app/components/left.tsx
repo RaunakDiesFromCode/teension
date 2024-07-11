@@ -22,7 +22,7 @@ const Left = () => {
           </li>
           <li className="py-1 transition-all duration-100 dark:hover:bg-slate-700 hover:bg-slate-50 rounded-md dark:hover:text-white hover:text-black">
             <Link
-              href={"/"}
+              href={"/friends"}
               className=" flex flex-row items-center gap-2 px-2 text-[17px]"
             >
               <FaUserFriends color="orange" size={"25px"} />

@@ -136,7 +136,7 @@ export async function checkId(id: number, email: string): Promise<boolean> {
     case 3:
       const fllwingRef = collection(db, "users", email, "following");
       const fllwingsnapshot = await getDocs(fllwingRef);
-      if (fllwingsnapshot.size >= 10) {
+      if (fllwingsnapshot.size >= 1) {
         createNotification(
           "challenge",
           "Finished challenge: " + getChallengeName(id),
