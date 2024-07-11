@@ -14,11 +14,26 @@ import DropdownMenu from "./UI/DropdownMenu";
 import NotificationDropdownMenu from "./UI/NotificationDropdownMenu";
 import ThemeSwitch from "./themeSwitch";
 import PostForm from "./postform";
+import { useRouter } from "next/navigation";
 
 export default function Navbar() {
   const [showPostForm, setShowPostForm] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [profilePic, setProfilePic] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const router = useRouter();
+
+  const handleSearch = () => {
+    if (searchQuery.trim()) {
+      router.push(`/search/${searchQuery.trim()}`);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleSearch();
+    }
+  };
 
   const handlePostAdded = () => {
     setShowPostForm(false);
@@ -28,7 +43,7 @@ export default function Navbar() {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
-        const userDocRef = doc(db, "users", currentUser.email||"");
+        const userDocRef = doc(db, "users", currentUser.email || "");
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
           setProfilePic(userDoc.data().profilePicture);
@@ -57,11 +72,17 @@ export default function Navbar() {
             <input
               type="text"
               placeholder="Search"
-              className="rounded-xl dark:bg-black bg-white pl-10 p-2 w-[50rem] border dark:border-white/50 border-black/50 transition transition-colors duration-100"
+              className="rounded-xl dark:bg-black bg-white pl-10 p-2 w-[50rem] border dark:border-white/50 border-black/50 transition duration-100"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={handleKeyDown}
             />
-            <span className="absolute left-2 top-1/2 transform -translate-y-1/2 px-1">
+            <button
+              className="absolute left-2 top-1/2 transform -translate-y-1/2 px-1 cursor-pointer"
+              onClick={handleSearch}
+            >
               <FaSearch />
-            </span>
+            </button>
           </div>
         </div>
 
