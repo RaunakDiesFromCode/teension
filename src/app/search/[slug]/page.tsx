@@ -130,7 +130,6 @@ const Page: React.FC<{ params: { slug: string } }> = ({ params }) => {
       }
     };
 
-
     fetchPosts();
   }, [currentUser, fetchCommentCounts, searchQuery]);
 
@@ -249,15 +248,16 @@ const Page: React.FC<{ params: { slug: string } }> = ({ params }) => {
   }
 
   return (
-    <div>
+    <div className="text-black dark:text-white">
       {noSearchResults ? (
-        <div>
+        <div className="flex items-center justify-center flex-col text-center w-full h-full mt-[25%]">
           <h1 className="text-xl py-2 font-bold">
+            <h1 className="text-[5rem] m-7 font-bold">😕</h1>
             No search results found for '{searchQuery}'
           </h1>
         </div>
       ) : (
-        <div>
+        <div className="text-black dark:text-white">
           <h1 className="text-xl py-2 font-bold">
             Search results for '{searchQuery}'
           </h1>
