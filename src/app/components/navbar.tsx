@@ -21,6 +21,7 @@ export default function Navbar() {
   const [user, setUser] = useState<User | null>(null);
   const [profilePic, setProfilePic] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
+  const [name, setName] = useState("");
   const router = useRouter();
 
   const handleSearch = () => {
@@ -47,6 +48,7 @@ export default function Navbar() {
         const userDoc = await getDoc(userDocRef);
         if (userDoc.exists()) {
           setProfilePic(userDoc.data().profilePicture);
+          setName(userDoc.data().name);
         }
       } else {
         setProfilePic("");
@@ -104,7 +106,7 @@ export default function Navbar() {
           </li>
 
           <li>
-            <Link href={`/profile/${email}`} className="">
+            <Link href={`/profile/${name}`} className="">
               {user ? (
                 <Image
                   className="text-white dark:bg-white/50 bg-black/50 transition-colors duration-100"

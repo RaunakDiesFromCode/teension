@@ -1,6 +1,6 @@
-// src/app/friends/page.tsx 
+// src/app/friends/page.tsx
 
-"use client"
+"use client";
 import React, { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -106,6 +106,10 @@ const Friends: React.FC = () => {
 
           const likesSnapshot = await getDocs(likesQuery);
           userLikesData[postData.id] = !likesSnapshot.empty;
+        }
+        if (postsData.length > 1) {
+          // Sort posts by createdAt in descending order (newest first)
+          postsData.sort((a, b) => b.createdAt.seconds - a.createdAt.seconds);
         }
       });
 

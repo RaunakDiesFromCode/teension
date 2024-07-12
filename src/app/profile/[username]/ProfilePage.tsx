@@ -115,6 +115,12 @@ export default function ProfilePage({ email }: { email: string }) {
                 commentCountsData[postData.id] = totalComments;
                 setCommentCounts(commentCountsData);
               }
+              if (postsData.length > 1) {
+                // Sort posts by createdAt in descending order (newest first)
+                postsData.sort(
+                  (a, b) => b.createdAt.seconds - a.createdAt.seconds
+                );
+              }
             });
 
             Promise.all(promises).then(() => {

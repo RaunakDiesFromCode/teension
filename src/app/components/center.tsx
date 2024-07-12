@@ -195,91 +195,88 @@ const Center: React.FC = () => {
     return formatDistanceToNow(date, { addSuffix: true });
   };
 
-   if (loading || authLoading) {
-     return <SkeletonLoader />;
-   }
+  if (loading || authLoading) {
+    return <SkeletonLoader />;
+  }
 
   return (
     <div>
-        <ul className="text-xl dark:text-white/80 text-black/80 transition-colors duration-200">
-          {posts.map((post) => (
-            <li
-              key={post.id}
-              className="py-1 dark:bg-gray-800 bg-gray-100 my-3 dark:hover:bg-slate-800 hover:bg-slate-100 rounded-md dark:hover:text-white hover:text-black flex flex-col transition-colors duration-100"
-            >
-              <div className="flex flex-row items-center -mb-2 gap-2 px-3 py-1 text-[17px] dark:text-white/75 text-black/75 transition-colors duration-200 justify-between">
-                <span className="text-md">
-                  <Link
-                    href={`/profile/${post.username}`}
-                    className="hover:text-blue-400"
-                  >
-                    {post.displayName || post.username}
+      <ul className="text-xl dark:text-white/80 text-black/80 transition-colors duration-200">
+        {posts.map((post) => (
+          <li
+            key={post.id}
+            className="py-1 dark:bg-gray-800 bg-gray-100 my-3 dark:hover:bg-slate-800 hover:bg-slate-100 rounded-md dark:hover:text-white hover:text-black flex flex-col transition-colors duration-100"
+          >
+            <div className="flex flex-row items-center -mb-2 gap-2 px-3 py-1 text-[17px] dark:text-white/75 text-black/75 transition-colors duration-200 justify-between">
+              <span className="text-md">
+                <Link
+                  href={`/profile/${post.displayName}`}
+                  className="hover:text-blue-400"
+                >
+                  {post.displayName || post.username}
+                </Link>
+              </span>
+              <div className="flex items-center">
+                <span className="text-sm">
+                  <Link href={"/"} className="hover:text-blue-400">
+                    {post.genre}
                   </Link>
                 </span>
-                <div className="flex items-center">
-                  <span className="text-sm">
-                    <Link href={"/"} className="hover:text-blue-400">
-                      {post.genre}
-                    </Link>
-                  </span>
-                  {"・"}
-                  <span className="text-sm text-opacity-50 italic">
-                    {formatTimestamp(post.createdAt)}
-                  </span>
-                </div>
+                {"・"}
+                <span className="text-sm text-opacity-50 italic">
+                  {formatTimestamp(post.createdAt)}
+                </span>
+              </div>
+            </div>
+            <Link href={`/post/${post.id}`} passHref>
+              <div className="flex flex-col gap-2 px-3 py-1 text-[17px] cursor-pointer">
+                <span className="text-2xl font-bold">{post.text}</span>
+                <span className="text-md my-1">{post.description}</span>
+                {post.image && (
+                  <div className="relative">
+                    <Image
+                      layout="responsive"
+                      width={500}
+                      height={300}
+                      src={post.image}
+                      alt={post.text}
+                      className="w-full rounded-md"
+                      onLoad={() => handleImageLoaded(post.id)}
+                    />
+                  </div>
+                )}
+              </div>
+            </Link>
+            <div className="flex flex-row">
+              <div className="flex flex-row items-center m-2 gap-2 rounded-full p-3 dark:bg-slate-700 bg-gray-300 transition-colors duration-100">
+                <button onClick={() => handleLike(post.id)}>
+                  {userLikes[post.id] ? (
+                    <FaHeart
+                      className="dark:text-white text-black"
+                      color="orangered"
+                    />
+                  ) : (
+                    <FaRegHeart className="dark:text-gray-300 text-gray-900" />
+                  )}
+                </button>
+                <span className="text-sm">{post.votes}</span>
               </div>
               <Link href={`/post/${post.id}`} passHref>
-                <div className="flex flex-col gap-2 px-3 py-1 text-[17px] cursor-pointer">
-                  <span className="text-2xl font-bold">{post.text}</span>
-                  <span className="text-md my-1">{post.description}</span>
-                  {post.image && (
-                    <div className="relative">
-                      <Image
-                        layout="responsive"
-                        width={500}
-                        height={300}
-                        src={post.image}
-                        alt={post.text}
-                        className="w-full rounded-md"
-                        onLoad={() => handleImageLoaded(post.id)}
-                      />
-                    </div>
-                  )}
+                <div className="m-2 dark:bg-slate-700 bg-gray-300 rounded-full p-3 flex items-center gap-1 cursor-pointer transition-colors duration-100">
+                  <BiComment />
+                  <span className="text-sm">{commentCounts[post.id] || 0}</span>
                 </div>
               </Link>
-              <div className="flex flex-row">
-                <div className="flex flex-row items-center m-2 gap-2 rounded-full p-3 dark:bg-slate-700 bg-gray-300 transition-colors duration-100">
-                  <button onClick={() => handleLike(post.id)}>
-                    {userLikes[post.id] ? (
-                      <FaHeart
-                        className="dark:text-white text-black"
-                        color="orangered"
-                      />
-                    ) : (
-                      <FaRegHeart className="dark:text-gray-300 text-gray-900" />
-                    )}
-                  </button>
-                  <span className="text-sm">{post.votes}</span>
-                </div>
-                <Link href={`/post/${post.id}`} passHref>
-                  <div className="m-2 dark:bg-slate-700 bg-gray-300 rounded-full p-3 flex items-center gap-1 cursor-pointer transition-colors duration-100">
-                    <BiComment />
-                    <span className="text-sm">
-                      {commentCounts[post.id] || 0}
-                    </span>
-                  </div>
-                </Link>
-                <div
-                  className="m-2 dark:bg-slate-700 bg-gray-300 rounded-full p-3 flex items-center gap-1 cursor-pointer transition-colors duration-100"
-                  onClick={() => toggleShareScreen(post.id)}
-                >
-                  <FaRegShareSquare />
-                </div>
+              <div
+                className="m-2 dark:bg-slate-700 bg-gray-300 rounded-full p-3 flex items-center gap-1 cursor-pointer transition-colors duration-100"
+                onClick={() => toggleShareScreen(post.id)}
+              >
+                <FaRegShareSquare />
               </div>
-            </li>
-          ))}
-        </ul>
-      
+            </div>
+          </li>
+        ))}
+      </ul>
 
       {showShareScreen && postIdForShare && (
         <ShareScreen

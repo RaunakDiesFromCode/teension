@@ -198,7 +198,7 @@ const Challenges = () => {
   const handleCompleteChallenge = async (topicId: number) => {
     if (!profile || !profile.email) return;
 
-    const isChallengeCompleted = await checkId(topicId, profile.email);
+    const isChallengeCompleted = await checkId(topicId, profile.name);
     if (isChallengeCompleted) {
       console.log(`Challenge ${topicId} completed!`);
       profile.stars += topics.find((topic) => topic.id === topicId)?.stars || 0;

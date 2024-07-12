@@ -1,12 +1,20 @@
 "use client";
 import { useState, ChangeEvent } from "react";
 import { useCreateUserWithEmailAndPassword } from "react-firebase-hooks/auth";
-import { auth, db, storage } from "@/app/firebase/config";
+import { auth, db } from "@/app/firebase/config";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 import Link from "next/link";
-import { doc, setDoc, serverTimestamp } from "@firebase/firestore";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  setDoc,
+  serverTimestamp,
+  doc,
+} from "@firebase/firestore";
 import { getDownloadURL, getStorage, ref, uploadBytes } from "firebase/storage";
-import {useRouter} from "next/navigation";
+import { useRouter } from "next/navigation";
 
 const SignUp = () => {
   const [step, setStep] = useState<number>(1);
@@ -54,9 +62,21 @@ const SignUp = () => {
     }
   };
 
+  const checkNameExists = async (name: string) => {
+    const q = query(collection(db, "users"), where("name", "==", name));
+    const querySnapshot = await getDocs(q);
+    return !querySnapshot.empty;
+  };
+
   const handleSignUp = async () => {
     setError(""); // Clear previous error
     try {
+      const nameExists = await checkNameExists(name);
+      if (nameExists) {
+        setError("Name already taken. Please choose a different name.");
+        return;
+      }
+
       const res = await createUserWithEmailAndPassword(email, password);
       if (res?.user) {
         console.log({ res });
@@ -88,13 +108,13 @@ const SignUp = () => {
           email,
           name,
           profilePicture: profilePictureURL,
-          coverPhoto: coverPhotoURL, // Include cover photo URL
+          coverPhoto: coverPhotoURL,
           description,
-          createdAt: serverTimestamp(), // Add createdAt timestamp
-          stars: 1, // Add stars field
-          tribe: "rookie", // Add tribe field
-          fire: false, // Add fire field
-          OP: false, // Add OP field
+          createdAt: serverTimestamp(),
+          stars: 1,
+          tribe: "rookie",
+          fire: false,
+          OP: false,
         });
 
         // Reset form fields
@@ -103,8 +123,8 @@ const SignUp = () => {
         setName("");
         setProfilePictureFile(null);
         setProfilePicturePreview(null);
-        setCoverPhotoFile(null); // Reset cover photo file
-        setCoverPhotoPreview(null); // Reset cover photo preview
+        setCoverPhotoFile(null);
+        setCoverPhotoPreview(null);
         setDescription("");
 
         router.push("/");
@@ -141,7 +161,7 @@ const SignUp = () => {
     switch (step) {
       case 1:
         return (
-          <div>
+          <div className="dark:bg-gray-800 bg-gray-300 p-5 rounded-md shadow-md">
             <h1 className="dark:text-white text-black text-2xl mb-5">
               Sign Up - Step 1
             </h1>
@@ -174,17 +194,22 @@ const SignUp = () => {
                 {showPassword ? <FaEyeSlash /> : <FaEye />}
               </button>
             </div>
-            <button
-              onClick={() => setStep(2)}
-              className="w-full p-3 bg-indigo-600 rounded text-white hover:bg-indigo-500"
-            >
-              Next
-            </button>
+            <div className=" flex gap-3 flex-row-reverse">
+              <button
+                onClick={() => {
+                  setStep(2);
+                  setError("");
+                }}
+                className="w-[50%] p-3 bg-indigo-600 rounded text-white hover:bg-indigo-500"
+              >
+                Next
+              </button>
+            </div>
           </div>
         );
       case 2:
         return (
-          <div>
+          <div className="dark:bg-gray-800 bg-gray-300 p-5 rounded-md shadow-md w-[28rem] ">
             <h1 className="dark:text-white text-black text-2xl mb-5 transition-colors duration-100">
               Sign Up - Step 2
             </h1>
@@ -195,7 +220,10 @@ const SignUp = () => {
               className="hidden "
               id="profilePictureInput"
             />
-            <label htmlFor="profilePictureInput" className="cursor-pointer">
+            <label
+              htmlFor="profilePictureInput"
+              className="cursor-pointer w-full "
+            >
               <div className="w-20 h-20 dark:bg-gray-700 bg-gray-50 rounded-full flex items-center justify-center overflow-hidden transition-colors duration-100">
                 {profilePicturePreview ? (
                   <img
@@ -230,38 +258,39 @@ const SignUp = () => {
                   />
                 ) : (
                   <span className="dark:text-white/50 text-black/50 text-2xl transition-colors duration-100">
-                    Add Cover Photo
+                    +
                   </span>
                 )}
               </div>
+              <div className="mt-2 text-sm text-gray-400">
+                Choose Cover Photo
+              </div>
             </label>
-            <button
-              onClick={() => setStep(3)}
-              className="w-full p-3 bg-indigo-600 rounded text-white hover:bg-indigo-500 transition-colors duration-100"
-            >
-              Next
-            </button>
-          </div>
-        );
-      case 3:
-        return (
-          <div>
-            <h1 className="dark:text-white text-black text-2xl mb-5">
-              Sign Up - Step 3
-            </h1>
             <textarea
-              placeholder="Description (optional)"
+              placeholder="Description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full p-3 mb-4 dark:bg-gray-700 bg-gray-50 rounded outline-none text-white placeholder-gray-500 transition-colors duration-100"
+              className="w-full p-3 mb-4 dark:bg-gray-700 bg-gray-50 rounded outline-none dark:text-white text-black placeholder-gray-500 transition-colors duration-100"
             />
-            <button
-              onClick={handleSignUp}
-              className="w-full p-3 bg-indigo-600 rounded text-white hover:bg-indigo-500 transition-colors duration-100"
-              disabled={loading}
-            >
-              Sign Up
-            </button>
+            {error && (
+              <p className="text-red-500 mb-4 transition-colors duration-100">
+                {error}
+              </p>
+            )}
+            <div className=" flex gap-3">
+              <button
+                onClick={() => setStep(1)}
+                className="w-full p-3 bg-indigo-600 rounded text-white hover:bg-indigo-500"
+              >
+                Back
+              </button>{" "}
+              <button
+                onClick={handleSignUp}
+                className="w-full p-3 bg-indigo-600 rounded text-white hover:bg-indigo-500 transition-colors duration-100"
+              >
+                Sign Up
+              </button>
+            </div>
           </div>
         );
       default:
@@ -270,14 +299,10 @@ const SignUp = () => {
   };
 
   return (
-    <div className="min-h-full flex items-center justify-center dark:bg-gray-900 bg-gray-200 transition-colors duration-100">
-      <div className="dark:bg-gray-800 bg-gray-100 p-8 rounded shadow-lg w-96 transition-colors duration-100">
-        {error && <div className="text-red-500 text-sm mb-4">{error}</div>}
-        {renderStepContent()}
-        <Link
-          href="/sign-in"
-          className="dark:text-white/50 text-black/50 flex justify-center pt-2 text-sm transition-colors duration-100"
-        >
+    <div className="max-w-md mx-auto mt-10">
+      {renderStepContent()}
+      <div className="mt-4 text-center">
+        <Link href="/signin" className="text-indigo-600 hover:underline">
           Already have an account? Sign In
         </Link>
       </div>

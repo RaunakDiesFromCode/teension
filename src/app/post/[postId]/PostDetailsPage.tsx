@@ -583,24 +583,24 @@ export default function PostDetailPage({ postId }: { postId: string }) {
               />
             </button>
             {moreOption && (
-                <div className="absolute -translate-x-[6rem] bg-white dark:bg-gray-700 rounded-lg shadow-lg p-2">
-                  {isPoster && (
-                    <button
-                      className=" rounded-full p-1 flex items-center gap-1 opacity-70 hover:opacity-100 transition duration-100"
-                      onClick={delPost}
-                    >
-                      <MdDeleteOutline size={25} color="orangered" />
-                      Delete Post
-                    </button>
-                  )}
+              <div className="absolute -translate-x-[6rem] bg-white dark:bg-gray-700 rounded-lg shadow-lg p-2">
+                {isPoster && (
                   <button
                     className=" rounded-full p-1 flex items-center gap-1 opacity-70 hover:opacity-100 transition duration-100"
-                    onClick={reportPost}
+                    onClick={delPost}
                   >
-                    <MdOutlineReport size={25} color="orangered" />
-                    Report Post
+                    <MdDeleteOutline size={25} color="orangered" />
+                    Delete Post
                   </button>
-                </div>
+                )}
+                <button
+                  className=" rounded-full p-1 flex items-center gap-1 opacity-70 hover:opacity-100 transition duration-100"
+                  onClick={reportPost}
+                >
+                  <MdOutlineReport size={25} color="orangered" />
+                  Report Post
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -617,7 +617,10 @@ export default function PostDetailPage({ postId }: { postId: string }) {
         </div>
         <p className="mb-2 -mt-2 text-xs dark:text-white/75 text-black/75 transition-colors duration-100">
           {"Posted by "}
-          <Link href={`/profile/${email}`} className="hover:text-blue-400 ">
+          <Link
+            href={`/profile/${post.username}`}
+            className="hover:text-blue-400 "
+          >
             {post.username}
           </Link>
         </p>
@@ -675,7 +678,7 @@ export default function PostDetailPage({ postId }: { postId: string }) {
                 <p className="">
                   <strong>
                     <Link
-                      href={`/profile/${c.email}`}
+                      href={`/profile/${c.username}`}
                       className="hover:text-blue-400 "
                     >
                       {c.username}
@@ -712,7 +715,7 @@ export default function PostDetailPage({ postId }: { postId: string }) {
                       <p className="">
                         <strong>
                           <Link
-                            href={`/profile/${r.email}`}
+                            href={`/profile/${r.username}`}
                             className="hover:text-blue-400 "
                           >
                             {r.username}
