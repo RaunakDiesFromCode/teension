@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -12,6 +12,9 @@ import {
   where,
   onSnapshot,
   getDoc,
+  orderBy,
+  limit,
+  startAfter,
 } from "firebase/firestore";
 import { db } from "@/app/firebase/config";
 import { BiComment } from "react-icons/bi";
@@ -49,7 +52,11 @@ const Center: React.FC = () => {
     [postId: string]: number;
   }>({});
   const [showShareScreen, setShowShareScreen] = useState(false);
-  const [postIdForShare, setPostIdForShare] = useState<string | null>(null); // State to track postId for sharing
+  const [postIdForShare, setPostIdForShare] = useState<string | null>(null);
+  const [lastVisible, setLastVisible] = useState<any>(null);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const observer = useRef<IntersectionObserver | null>(null);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   const fetchCommentCounts = useCallback(async (posts: Post[]) => {
     const commentCountsData: { [postId: string]: number } = {};
@@ -62,8 +69,26 @@ const Center: React.FC = () => {
     setCommentCounts(commentCountsData);
   }, []);
 
-  useEffect(() => {
-    const unsubscribePosts = onSnapshot(collection(db, "posts"), (snapshot) => {
+  const fetchPosts = useCallback(
+    async (lastDoc = null) => {
+      setLoading(true);
+
+      let postsQuery = query(
+        collection(db, "posts"),
+        orderBy("createdAt", "desc"),
+        limit(10)
+      );
+
+      if (lastDoc) {
+        postsQuery = query(
+          collection(db, "posts"),
+          orderBy("createdAt", "desc"),
+          startAfter(lastDoc),
+          limit(10)
+        );
+      }
+
+      const snapshot = await getDocs(postsQuery);
       const postsData: Post[] = [];
       const userLikesData: { [postId: string]: boolean } = {};
 
@@ -84,16 +109,39 @@ const Center: React.FC = () => {
         }
       });
 
-      Promise.all(promises).then(() => {
-        setUserLikes(userLikesData);
-        setPosts(postsData);
-        setLoading(false);
-        fetchCommentCounts(postsData); // Fetch comment counts separately
-      });
-    });
+      await Promise.all(promises);
 
-    return () => unsubscribePosts();
-  }, [currentUser, fetchCommentCounts]);
+      setUserLikes((prevLikes) => ({ ...prevLikes, ...userLikesData }));
+      setPosts((prevPosts) => [...prevPosts, ...postsData]);
+      setLastVisible(snapshot.docs[snapshot.docs.length - 1]);
+      setLoading(false);
+      setIsFetchingMore(false);
+      fetchCommentCounts(postsData);
+    },
+    [currentUser, fetchCommentCounts]
+  );
+
+  useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts]);
+
+  useEffect(() => {
+    if (observer.current) observer.current.disconnect();
+
+    observer.current = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && !isFetchingMore) {
+          setIsFetchingMore(true);
+          fetchPosts(lastVisible);
+        }
+      },
+      { threshold: 1 }
+    );
+
+    if (loadMoreRef.current) observer.current.observe(loadMoreRef.current);
+
+    return () => observer.current?.disconnect();
+  }, [fetchPosts, lastVisible, isFetchingMore]);
 
   const handleImageLoaded = (postId: string) => {
     setImageLoaded((prevState) => ({ ...prevState, [postId]: true }));
@@ -277,6 +325,8 @@ const Center: React.FC = () => {
           </li>
         ))}
       </ul>
+
+      <div ref={loadMoreRef} className="h-1" />
 
       {showShareScreen && postIdForShare && (
         <ShareScreen

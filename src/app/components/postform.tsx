@@ -121,6 +121,7 @@ const PostForm: React.FC<PostFormProps> = ({ onPostAdded }) => {
           <option value="games">Games</option>
           <option value="love">Love</option>
           <option value="life">Life</option>
+          <option value="life">Sports</option>
           <option value="others">Others</option>
         </select>
       </div>

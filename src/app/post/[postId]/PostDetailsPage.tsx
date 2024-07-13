@@ -1,6 +1,6 @@
 // src/components/PostDetailPage.tsx
 "use client";
-import { useEffect, useState } from "react";
+import { use, useEffect, useState } from "react";
 import {
   doc,
   getDoc,
@@ -29,6 +29,8 @@ import { createNotification } from "@/app/components/utility/createNotification"
 import { FiSend } from "react-icons/fi";
 import { MdDeleteOutline, MdOutlineReport } from "react-icons/md";
 import Spinner from "@/app/components/UI/spinner";
+import addPoints from "@/app/components/utility/addPoints";
+import addKeywordPoints from "@/app/components/utility/keywordPoints";
 
 interface Post {
   likes: number;
@@ -98,6 +100,10 @@ export default function PostDetailPage({ postId }: { postId: string }) {
               const userLikeRef = doc(db, "posts", postId, "likes", userEmail);
               const userLikeDoc = await getDoc(userLikeRef);
               setPostLiked(userLikeDoc.exists());
+            }
+            if (userEmail) {
+              addPoints(userEmail, postData.genre, 1);
+              addKeywordPoints(userEmail, postData.text, 1);
             }
           } else {
             setError("Post not found");
@@ -234,6 +240,10 @@ export default function PostDetailPage({ postId }: { postId: string }) {
             Date.now(),
             post.email
           );
+          if (userEmail) {
+            addPoints(userEmail, post.genre, 1);
+            addKeywordPoints(userEmail, post.text, 1);
+          }
         } else {
           console.log("Post is null");
         }
@@ -322,6 +332,11 @@ export default function PostDetailPage({ postId }: { postId: string }) {
         collection(db, `posts/${postId}/comments/${parentCommentId}/replies`),
         newReply
       );
+
+      if (userEmail && post) {
+        addPoints(userEmail, post.genre, 1);
+        addKeywordPoints(userEmail, post.text, 1);
+      }
 
       // Fetch comments with updated replies
       const commentsCollection = collection(db, `posts/${postId}/comments`);
@@ -435,6 +450,9 @@ export default function PostDetailPage({ postId }: { postId: string }) {
           Date.now(),
           post.email // Pass the username instead of the email
         );
+        if (userEmail) {
+          addPoints(userEmail, post.genre, 1);
+        }
       }
     } catch (error) {
       console.error("Error updating document: ", error);
