@@ -150,12 +150,17 @@ export default function PostDetailPage({ postId }: { postId: string }) {
                       `posts/${postId}/comments/${doc.id}/replies`
                     );
                     const repliesSnapshot = await getDocs(repliesCollection);
-                    const repliesList = repliesSnapshot.docs.map(
-                      (replyDoc) => ({
+                    const repliesList = repliesSnapshot.docs
+                      .map((replyDoc) => ({
                         id: replyDoc.id,
                         ...replyDoc.data(),
-                      })
-                    );
+                        time: replyDoc.data().time,
+                      }))
+                      .sort(
+                        (a, b) =>
+                          new Date(a.time).getTime() -
+                          new Date(b.time).getTime()
+                      ); // Sorting replies so that newer replies come last
 
                     return {
                       id: doc.id,
@@ -174,6 +179,7 @@ export default function PostDetailPage({ postId }: { postId: string }) {
                 setComments(commentsList as Comment[]);
               }
             );
+
 
             return () => {
               unsubscribeComments();
