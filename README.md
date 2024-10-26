@@ -1,4 +1,4 @@
-##This project will no longer receive updates I am working on Teension 2.
+## This project will no longer receive updates as I am working on Teension 2.
 
 This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
